@@ -13,3 +13,6 @@ plugins {
 }
 
 include ':app'
+
+// ADICIONE ESTA LINHA PARA CORRIGIR O ERRO
+apply from: new File(settingsDir, 'local.properties')
