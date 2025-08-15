@@ -1,5 +1,16 @@
 // Conteúdo para android/settings.gradle
+
 pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdk = properties.getProperty("flutter.sdk")
+        assert flutterSdk != null, "flutter.sdk not set in local.properties"
+        return flutterSdk
+    }()
+
+    includeBuild "$flutterSdkPath/packages/flutter_tools/gradle"
+
     repositories {
         google()
         mavenCentral()
@@ -9,8 +20,8 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "7.3.0" apply false // Usando uma versão mais estável e compatível
-    id "org.jetbrains.kotlin.android" version "1.7.10" apply false // Alinhado com a versão do Flutter
+    id "com.android.application" version "7.3.0" apply false
+    id "org.jetbrains.kotlin.android" version "1.7.10" apply false
 }
 
 include ':app'
