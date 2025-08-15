@@ -1,15 +1,15 @@
 // Conteúdo para android/build.gradle
 
-// ADICIONE ESTE BLOCO INTEIRO
+plugins {
+    // Este bloco deve vir antes de 'allprojects'
+    // Ele pode ficar vazio, mas precisa estar aqui.
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
-}
-
-plugins {
-    // NÃO DECLARE PLUGINS AQUI
 }
 
 tasks.register("clean", Delete) {
