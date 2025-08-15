@@ -1,10 +1,12 @@
-// ... (todo o conteúdo anterior do arquivo) ...
+// Conteúdo para android/build.gradle
 
-    flutter {
-        source '../..'
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
+}
 
-    dependencies {
-        // ADICIONE ESTA LINHA ABAIXO
-        implementation "androidx.window:window:1.0.0"
-    }
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
