@@ -1,36 +1,11 @@
-// ... (início do arquivo)
-
-android {
-    namespace "com.example.ola_mundo"
-    compileSdk 34 // ATUALIZE ESTA LINHA
-    ndkVersion "25.1.8937393"
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-
-    defaultConfig {
-        applicationId "com.example.ola_mundo"
-        minSdk 21
-        targetSdk 34 // ATUALIZE ESTA LINHA
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-    }
-
-    buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-        }
+// Conteúdo para android/build.gradle
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
 }
 
-// ... (resto do arquivo)
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
