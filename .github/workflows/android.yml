@@ -1,0 +1,58 @@
+# Nome do fluxo de trabalho
+name: Build de Teste do Projeto Flutter
+
+# Gatilhos para iniciar o fluxo de trabalho
+on:
+  push:
+    branches:
+      - main # Aciona a cada push para o branch 'main'
+  workflow_dispatch: # Permite acionar manualmente pela interface do GitHub
+
+# Trabalhos a serem executados
+jobs:
+  build-android:
+    # O tipo de máquina virtual que o trabalho será executado
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Clona o seu repositório para a máquina virtual
+      - name: Clonar o repositório
+        uses: actions/checkout@v4
+
+      # 2. Configura o ambiente Java (JDK 17), necessário para o Gradle
+      - name: Configurar o Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 3. Configura o ambiente Flutter
+      - name: Configurar o Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6' # Versão específica do Flutter
+          channel: 'stable'
+          cache: true # Habilita o cache para agilizar builds futuros
+
+      # 4. Instala as dependências do projeto a partir do pubspec.yaml
+      - name: Instalar dependências
+        run: flutter pub get
+
+      # 5. Analisa o código para encontrar erros de sintaxe e estilo
+      - name: Analisar o código
+        run: flutter analyze
+
+      # 6. Executa os testes automatizados
+      - name: Executar testes
+        run: flutter test
+
+      # 7. Compila o APK de produção (release)
+      - name: Compilar o APK
+        run: flutter build apk --release
+
+      # 8. (Opcional) Faz o upload do APK como um artefato para download
+      - name: Fazer upload do APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
