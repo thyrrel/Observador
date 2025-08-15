@@ -1,17 +1,10 @@
-// Conteúdo para android/build.gradle
+// ... (todo o conteúdo anterior do arquivo) ...
 
-plugins {
-    // Este bloco deve vir antes de 'allprojects'
-    // Ele pode ficar vazio, mas precisa estar aqui.
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
+    flutter {
+        source '../..'
     }
-}
 
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
-}
+    dependencies {
+        // ADICIONE ESTA LINHA ABAIXO
+        implementation "androidx.window:window:1.0.0"
+    }
