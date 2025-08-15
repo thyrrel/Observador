@@ -1,23 +1,36 @@
-// Conteúdo para android/build.gradle
+// ... (início do arquivo)
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
+android {
+    namespace "com.example.ola_mundo"
+    compileSdk 34 // ATUALIZE ESTA LINHA
+    ndkVersion "25.1.8937393"
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
-}
 
-// ADICIONE ESTE NOVO BLOCO INTEIRO
-subprojects {
-    project.configurations.all {
-        resolutionStrategy.eachDependency { details ->
-            if (details.requested.group == 'androidx.window') {
-                details.useVersion "1.0.0"
-            }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        applicationId "com.example.ola_mundo"
+        minSdk 21
+        targetSdk 34 // ATUALIZE ESTA LINHA
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
         }
     }
 }
 
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
-}
+// ... (resto do arquivo)
