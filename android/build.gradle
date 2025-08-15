@@ -1,4 +1,13 @@
 // Conteúdo para android/build.gradle
+
+// ADICIONE ESTE BLOCO INTEIRO
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
 plugins {
     // NÃO DECLARE PLUGINS AQUI
 }
