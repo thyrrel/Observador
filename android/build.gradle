@@ -1,65 +1,25 @@
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
+// android/build.gradle (raiz do projeto)
+buildscript {
+    ext.kotlin_version = '1.8.21'
 
-android {
-    namespace "com.example.guarda_costas_wifi"
-    compileSdkVersion flutter.compileSdkVersion
-
-    ndkVersion flutter.ndkVersion
-
-    defaultConfig {
-        // Nome do app e ID do pacote
-        applicationId "com.example.guarda_costas_wifi"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
-        versionCode flutter.versionCode
-        versionName flutter.versionName
-        multiDexEnabled true
+    repositories {
+        google()
+        mavenCentral()
     }
 
-    buildTypes {
-        release {
-            // Otimizações para build release
-            signingConfig signingConfigs.debug
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-        }
-        debug {
-            // Build debug sem minificação
-            signingConfig signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.4'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
-flutter {
-    source "../.."
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
 
-dependencies {
-    // Dependências principais
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation "androidx.core:core-ktx:1.12.0"
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "com.google.android.material:material:1.11.0"
-
-    // Multidex (necessário quando muitas libs são usadas)
-    implementation "androidx.multidex:multidex:2.0.1"
-
-    // Notificações locais
-    implementation "androidx.work:work-runtime-ktx:2.9.0"
+task clean(type: Delete) {
+    delete rootProject.buildDir
 }
