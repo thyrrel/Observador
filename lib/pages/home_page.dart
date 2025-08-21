@@ -24,3 +24,11 @@ _buildCard(
   onTap: () => Navigator.push(context,
       MaterialPageRoute(builder: (_) => const AiAssistantPage())),
 ),
+
+_buildCard(
+  icon: Icons.palette,
+  title: 'Aparência',
+  subtitle: 'Temas, cores e modo escuro',
+  onTap: () => Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const SettingsPage())),
+),
