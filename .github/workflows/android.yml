@@ -1,4 +1,4 @@
-name: Observador
+name: observador
 
 on:
   push:
@@ -10,24 +10,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Passo 1: Clonar o repositório
       - uses: actions/checkout@v4
 
-      # Passo 2: Instalar Flutter
+      # Instala a versão específica do Flutter que tem Dart >= 3.5.0
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.6'  # Compatível com Dart >=3.5.0
+          flutter-version: '3.20.5'
 
-      # Passo 3: Atualizar dependências
       - run: flutter pub get
-
-      # Passo 4: Rodar testes (opcional, mas recomendado)
       - run: flutter test
-
-      # Passo 5: Build do APK release
       - run: flutter build apk --release
-
-      # Passo 6: Upload do APK gerado diretamente (sem zip)
       - uses: actions/upload-artifact@v4
         with:
           name: observador-apk
