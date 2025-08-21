@@ -1,34 +1,46 @@
-name: observador
-description: Dashboard de rede com controle de banda, IA e três planos.
-publish_to: "none"
-version: 2.0.0+200
+name: Observador
 
-environment:
-  sdk: ">=3.5.0 <4.0.0"
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
-dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.6
-  shared_preferences: ^2.5.4
-  sqflite: ^2.5.6
-  path_provider: ^2.5.2
-  http: ^1.1.0
-  in_app_purchase: ^3.2.2
-  flutter_local_notifications: ^18.0.1
-  syncfusion_flutter_charts: ^30.2.6+1
-  workmanager: ^0.9.0+2
-  dartssh2: ^2.8.2
-  pdf: ^3.10.4
-  share_plus: ^7.3.1
-  uuid: ^4.8.0
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.1
+    steps:
+      # Passo 1: Clonar o repositório
+      - uses: actions/checkout@v4
 
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/images/
+      # Passo 2: Configurar cache do pub para acelerar builds
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool/pub
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      # Passo 3: Instalar Flutter versão compatível com Dart >=3.5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.20.5'
+
+      # Passo 4: Atualizar dependências
+      - run: flutter pub get
+
+      # Passo 5: Rodar testes
+      - run: flutter test
+
+      # Passo 6: Build do APK release
+      - run: flutter build apk --release
+
+      # Passo 7: Upload do APK gerado diretamente (sem zip)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: observador-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
