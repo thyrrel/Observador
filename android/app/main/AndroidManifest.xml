@@ -32,7 +32,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Necessário para plugins V2 -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
