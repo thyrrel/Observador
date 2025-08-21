@@ -12,11 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Instala a versão específica do Flutter que tem Dart >= 3.5.0
+      # Instala Flutter >=3.20 (no canal beta, que tem Dart >=3.5)
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.20.5'
+          channel: 'beta'
 
+      - run: flutter --version
       - run: flutter pub get
       - run: flutter test
       - run: flutter build apk --release
