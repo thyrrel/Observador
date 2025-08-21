@@ -1,17 +1,34 @@
-<activity
-    android:name=".MainActivity"
-    android:exported="true"
-    android:launchMode="singleTop"
-    android:theme="@style/LaunchTheme"
-    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-    android:hardwareAccelerated="true"
-    android:windowSoftInputMode="adjustResize">
-    <meta-data
-        android:name="io.flutter.embedding.android.NormalTheme"
-        android:resource="@style/NormalTheme"
-        />
-    <intent-filter>
-        <action android:name="android.intent.action.MAIN"/>
-        <category android:name="android.intent.category.LAUNCHER"/>
-    </intent-filter>
-</activity>
+name: Observador
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Passo 1: Clonar o repositório
+      - uses: actions/checkout@v4
+
+      # Passo 2: Instalar Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'  # Compatível com Dart >=3.5.0
+
+      # Passo 3: Atualizar dependências
+      - run: flutter pub get
+
+      # Passo 4: Rodar testes (opcional, mas recomendado)
+      - run: flutter test
+
+      # Passo 5: Build do APK release
+      - run: flutter build apk --release
+
+      # Passo 6: Upload do APK gerado diretamente (sem zip)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: observador-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
