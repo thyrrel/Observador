@@ -1,1 +1,2 @@
-rebuild CI
+git commit --allow-empty -m "force rerun"
+git push
