@@ -1,94 +1,45 @@
-import 'pages/home_page.dart';
- 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:observador/pages/home_page.dart';
+import 'package:observador/services/theme_service.dart';
 
-void main() {
-  runApp(const ObservadorApp());
- void main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
-  await Workmanager().registerPeriodicTask(
-    'trafficCollector',
-    'collectTraffic',
-    frequency: const Duration(minutes: 1), // 30 s não é permitido, mínimo 15 min
-  );
-  runApp(const ObservadorApp());
+  final theme = await ThemeService.load();
+  runApp(ObservadorApp(initialTheme: theme));
 }
 
+class ObservadorApp extends StatefulWidget {
+  final ThemeMode initialTheme;
+  const ObservadorApp({super.key, required this.initialTheme});
+
+  @override
+  State<ObservadorApp> createState() => _ObservadorAppState();
 }
 
-class ObservadorApp extends StatelessWidget {
-  const ObservadorApp({super.key});
+class _ObservadorAppState extends State<ObservadorApp> {
+  late ThemeMode _theme;
+
+  @override
+  void initState() {
+    super.initState();
+    _theme = widget.initialTheme;
+  }
+
+  Future<void> _changeTheme(ThemeMode mode) async {
+    setState(() => _theme = mode);
+    await ThemeService.save(mode);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Observador v2',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
+      themeMode: _theme,
+      theme: ThemeService.light(),
+      darkTheme: _theme == ThemeMode.values[2]
+          ? ThemeService.matrix()
+          : ThemeService.dark(),
       home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Hub Observador')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _Card(
-            icon: Icons.speed,
-            title: 'Dashboard de Banda',
-            subtitle: 'Veja quem está usando a rede agora',
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const Placeholder())),
-          ),
-          _Card(
-            icon: Icons.network_check,
-            title: 'Controle de Rede',
-            subtitle: 'Bloqueie ou dê prioridade',
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const Placeholder())),
-          ),
-          _Card(
-            icon: Icons.assistant,
-            title: 'Assistente IA',
-            subtitle: 'Sugestões automáticas',
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const Placeholder())),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Card extends StatelessWidget {
-  final IconData icon;
-  final String title, subtitle;
-  final VoidCallback onTap;
-  const _Card(
-      {required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        leading: Icon(icon, size: 32, color: Colors.blue),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
     );
   }
 }
