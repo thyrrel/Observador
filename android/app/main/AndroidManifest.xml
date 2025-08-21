@@ -33,7 +33,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Migração para Embedding V2 -->
+        <!-- 🔑  obrigatório para V2 -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
