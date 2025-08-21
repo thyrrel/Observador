@@ -1,4 +1,4 @@
-name: CI Observador
+name: Observador
 
 on:
   push:
