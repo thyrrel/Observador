@@ -8,3 +8,10 @@ _buildCard(
     MaterialPageRoute(builder: (_) => const DashboardPage()),
   ),
 ),
+_buildCard(
+  icon: Icons.network_check,
+  title: 'Controle de Rede',
+  subtitle: 'Bloqueie ou dê prioridade',
+  onTap: () => Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const NetworkControlPage())),
+),
