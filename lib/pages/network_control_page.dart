@@ -29,11 +29,16 @@ class _NetworkControlPageState extends State<NetworkControlPage> {
                 color: bloqueado ? Colors.red : Colors.green,
               ),
               title: Text('IP $ip'),
-              subtitle: Text(bloqueado ? 'Bloqueado' : 'Liberado'),
-              trailing: Switch(
-                value: bloqueado,
-                onChanged: (value) {
-                  setState(() => _blocked[ip] = value);
+            subtitle: Text(bloqueado ? 'Bloqueado' : 'Liberado'),
+          trailing: Switch(
+            value: bloqueado,
+              onChanged: (value) async {
+               setState(() => _blocked[ip] = value);
+  value
+      ? await RouterService.blockIP(ip)
+      : await RouterService.unblockIP(ip);
+},
+
                   // aqui futuramente chamará o método real de bloqueio
                 },
               ),
