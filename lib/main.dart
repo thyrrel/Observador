@@ -1,4 +1,4 @@
-import 'pages/home_page.dart';   // adicione essa linha no topo
+import 'pages/home_page.dart';
  'package:flutter/material.dart';
 
 void main() {
