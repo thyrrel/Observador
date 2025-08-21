@@ -3,6 +3,17 @@ import 'pages/home_page.dart';
 
 void main() {
   runApp(const ObservadorApp());
+ void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
+  await Workmanager().registerPeriodicTask(
+    'trafficCollector',
+    'collectTraffic',
+    frequency: const Duration(minutes: 1), // 30 s não é permitido, mínimo 15 min
+  );
+  runApp(const ObservadorApp());
+}
+
 }
 
 class ObservadorApp extends StatelessWidget {
