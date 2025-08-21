@@ -1,7 +1,6 @@
-package com.thyrrel.observador
+package com.seu.pacote
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity: FlutterActivity() {
-    // Nenhum código extra é necessário aqui para o embedding V2
 }
