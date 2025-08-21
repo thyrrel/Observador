@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'pages/home_page.dart';   // adicione essa linha no topo
+ 'package:flutter/material.dart';
 
 void main() {
   runApp(const ObservadorApp());
