@@ -1,4 +1,4 @@
-name: observador
+name: Observador
 description: Dashboard de rede com controle de banda, IA e três planos.
 publish_to: "none"
 version: 2.0.0+200
@@ -12,7 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   shared_preferences: ^2.5.3
   sqflite: ^2.4.1
-  path_provider: ^2.2.17
+  path_provider: ^2.2.15
   http: ^1.1.0
   in_app_purchase: ^3.1.6
   flutter_local_notifications: ^18.0.1
@@ -22,8 +22,8 @@ dependencies:
   pdf: ^3.10.4
   share_plus: ^7.2.1
   uuid: ^4.5.1
-  local_auth: ^2.2.1
   provider: ^6.1.5+1
+  local_auth: ^1.0.51
 
 dev_dependencies:
   flutter_test:
