@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+defaults:
+  run:
+    working-directory: Observador   # <-- entra na pasta correta
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,7 +40,6 @@ jobs:
       - name: Obter versão do build
         id: version
         run: |
-          # Identifica tipo do build
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             BUILD_TYPE="pr"
             SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
@@ -58,7 +61,6 @@ jobs:
           echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_ENV
           echo "BUILD_TYPE=$BUILD_TYPE" >> $GITHUB_ENV
 
-          # Gerar versionCode numérico
           CLEAN_VERSION=$(echo $BUILD_VERSION | sed 's/^v//' | sed 's/[^0-9\.]//g')
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CLEAN_VERSION"
           BASE_VERSION_CODE=$(printf "%d%02d%02d" ${MAJOR:-0} ${MINOR:-0} ${PATCH:-0})
@@ -89,7 +91,7 @@ jobs:
         with:
           name: observador-$BUILD_TYPE-$BUILD_VERSION
           path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+            Observador/build/app/outputs/flutter-apk/app-release.apk
+            Observador/build/app/outputs/bundle/release/app-release.aab
           compression-level: 0
           if-no-files-found: error
