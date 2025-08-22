@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:local_auth/local_auth.dart';
 
 import 'providers/network_provider.dart';
 import 'providers/dns_provider.dart';
@@ -14,8 +12,10 @@ import 'services/dns_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicialização de serviços
+  // Inicializa notificações
   await NotificationService().init();
+
+  // Inicializa autenticação biométrica (opcional)
   await AuthService().init();
 
   runApp(const ObservadorApp());
