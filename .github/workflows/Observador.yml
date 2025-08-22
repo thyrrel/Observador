@@ -7,6 +7,7 @@ on:
       - 'v*'
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -74,7 +75,8 @@ jobs:
         run: |
           sed -i "s/versionCode [0-9]\+/versionCode $VERSION_CODE/" android/app/build.gradle
           sed -i "s/versionName \".*\"/versionName \"$BUILD_VERSION\"/" android/app/build.gradle
-          cat android/app/build.gradle | grep version
+          echo "Versão atualizada no build.gradle:"
+          grep "version" android/app/build.gradle
 
       - name: Build APK (release)
         run: flutter build apk --release --build-name=$BUILD_VERSION --build-number=$VERSION_CODE
