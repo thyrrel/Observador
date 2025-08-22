@@ -1,30 +1,69 @@
-buildscript {
-    ext.kotlin_version = '1.8.21'
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.4'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in local.properties")
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')?.toInteger() ?: 1
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.0'
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+android {
+    compileSdkVersion 34
+
+    defaultConfig {
+        applicationId "com.example.observador"
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode flutterVersionCode
+        versionName flutterVersionName
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    buildFeatures {
+        viewBinding true
     }
 }
 
-rootProject.buildDir = File(rootProject.projectDir, '../build')
-subprojects {
-    project.buildDir = File(rootProject.projectDir, "../${project.name}/build")
-}
-subprojects {
-    project.evaluationDependsOn(':app')
+flutter {
+    source '../..'
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
