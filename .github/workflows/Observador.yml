@@ -1,51 +1,100 @@
-Skip to content
-Navigation Menu
-thyrrel
-Observador
+name: Observador
 
-Code
-Issues
-Pull requests
-Observador
-Observador.yml #38
-build
-failed now in 1m 15s
-2s
-0s
-58s
-4s
-4s
-3s
-0s
-0s
-Run sed -i "s/versionCode [0-9]\+/versionCode $VERSION_CODE/" android/app/build.gradle
-Versão atualizada no build.gradle:
-    load(new FileInputStream(localProperties)); getProperty('flutter.versionCode') 
-    load(new FileInputStream(localProperties)); getProperty('flutter.versionName') 
-        versionCode 2185870000           // workflow irá substituir
-        versionName "pr-218387e"    // workflow irá substituir
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-1s
-Run flutter build apk --release --build-name=$BUILD_VERSION --build-number=$VERSION_CODE
-  
-buildNumber: 2185870000 is greater than the maximum allowed value of 2100000000.
-For more information see https://developer.android.com/studio/publish/versioning.html .
-Error: Process completed with exit code 1.
-0s
-0s
-0s
-Post job cleanup.
-0s
-Post job cleanup.
-/usr/bin/git version
-git version 2.51.0
-Temporarily overriding HOME='/home/runner/work/_temp/a9b9887f-f641-49e2-97f3-eaa1aa21add8' before making global git config changes
-Adding repository directory to the temporary git global config as a safe directory
-/usr/bin/git config --global --add safe.directory /home/runner/work/Observador/Observador
-/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-http.https://github.com/.extraheader
-/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-0s
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.1" # Dart >=3.4.0
+          channel: stable
+
+      - name: Limpar build anterior
+        run: flutter clean
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Atualizar plugins (force upgrade)
+        run: |
+          flutter pub outdated
+          flutter pub upgrade
+
+      - name: Obter versão do build
+        id: version
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            BUILD_TYPE="pr"
+            SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+            BUILD_VERSION="pr-${SHORT_SHA}"
+          else
+            if [[ "${GITHUB_REF##*/}" == v* ]]; then
+              BUILD_VERSION="${GITHUB_REF##*/}"
+              if [[ "$BUILD_VERSION" =~ - ]]; then
+                BUILD_TYPE="beta"
+              else
+                BUILD_TYPE="release"
+              fi
+            else
+              BUILD_TYPE="pr"
+              SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+              BUILD_VERSION="pr-${SHORT_SHA}"
+            fi
+          fi
+          echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_ENV
+          echo "BUILD_TYPE=$BUILD_TYPE" >> $GITHUB_ENV
+
+          # Cálculo seguro do versionCode
+          CLEAN_VERSION=$(echo $BUILD_VERSION | sed 's/^v//' | sed 's/[^0-9\.]//g')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CLEAN_VERSION"
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH)) # seguro < 2.1B
+
+          # Ajuste para PR/beta
+          if [[ "$BUILD_TYPE" == "beta" ]]; then
+            VERSION_CODE=$((VERSION_CODE + 10000))
+          elif [[ "$BUILD_TYPE" == "pr" ]]; then
+            VERSION_CODE=$((VERSION_CODE + 20000))
+          fi
+
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "Versão do build: $BUILD_VERSION, versionCode: $VERSION_CODE, tipo: $BUILD_TYPE"
+
+      - name: Atualizar versionCode no build.gradle
+        run: |
+          sed -i "s/versionCode [0-9]\+/versionCode $VERSION_CODE/" android/app/build.gradle
+          sed -i "s/versionName \".*\"/versionName \"$BUILD_VERSION\"/" android/app/build.gradle
+          echo "Versão atualizada no build.gradle:"
+          grep "version" android/app/build.gradle
+
+      - name: Build APK (release)
+        run: flutter build apk --release --build-name=$BUILD_VERSION --build-number=$VERSION_CODE
+
+      - name: Build AAB (release)
+        run: flutter build appbundle --release --build-name=$BUILD_VERSION --build-number=$VERSION_CODE
+
+      - name: Upload de APK e AAB (sem compressão)
+        uses: actions/upload-artifact@v4
+        with:
+          name: observador-$BUILD_TYPE-$BUILD_VERSION
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          compression-level: 0
+          if-no-files-found: error
