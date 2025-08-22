@@ -1,6 +1,6 @@
 name: observador
 description: Aplicativo de monitoramento e segurança de redes - Observador
-publish_to: 'none' # Mantém privado para não publicar no pub.dev
+publish_to: 'none' # Mantém privado
 
 version: 1.0.0+1
 
