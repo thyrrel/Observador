@@ -1,27 +1,30 @@
 name: observador
-description: Aplicativo Observador
+description: Um aplicativo Flutter para monitoramento e observação de dispositivos e redes.
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
-  flutter: ">=3.24.0"
+  sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.5
-  provider: ^6.1.5+1
-  shared_preferences: ^2.5.3
-  local_auth: ^1.0.51
-  path_provider: ^2.2.17
-  http: ^1.1.0
-  flutter_local_notifications: ^12.0.4
+  # Dependências principais
+  cupertino_icons: ^1.0.8
+  path_provider: ^2.1.5
+  provider: ^6.1.2
+  shared_preferences: ^2.3.3
+  http: ^1.2.2
+  connectivity_plus: ^6.1.0
+  local_auth: ^2.3.0
+  flutter_local_notifications: ^17.2.2
+  background_fetch: ^1.2.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.1
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
