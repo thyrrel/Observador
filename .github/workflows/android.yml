@@ -29,7 +29,10 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
-      - name: Build APK
+      - name: Rodar testes
+        run: flutter test
+
+      - name: Build APK Release
         run: flutter build apk --release
 
       - name: Upload APK
