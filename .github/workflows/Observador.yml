@@ -8,10 +8,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-defaults:
-  run:
-    working-directory: Observador   # <-- entra na pasta correta
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -91,7 +87,7 @@ jobs:
         with:
           name: observador-$BUILD_TYPE-$BUILD_VERSION
           path: |
-            Observador/build/app/outputs/flutter-apk/app-release.apk
-            Observador/build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
           compression-level: 0
           if-no-files-found: error
