@@ -4,10 +4,8 @@
     <application
         android:name="${applicationName}"
         android:label="Observador"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:theme="@style/LaunchTheme">
-
+        android:icon="@mipmap/ic_launcher">
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -16,14 +14,16 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <!-- Adicione permissões e serviços adicionais se necessário -->
-
+        <!-- Muito importante para Embedding V2 -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2"/>
     </application>
-
 </manifest>
