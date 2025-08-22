@@ -1,4 +1,4 @@
-package com.seu.pacote
+package com.thyrrel.observador
 
 import io.flutter.embedding.android.FlutterActivity
 
