@@ -35,13 +35,18 @@ jobs:
       - name: Build App Bundle (.aab)
         run: flutter build appbundle --release
 
-      - name: Upload artefatos (APK e AAB)
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-build
-          path: |
-            build/app/outputs/flutter-apk/*.apk
-            build/app/outputs/bundle/release/*.aab
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 7
 
       # -----------------------------
@@ -56,39 +61,31 @@ jobs:
       #     track: internal
       #     status: completed
 
-  build_ios:
-    name: Build iOS
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Configurar Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-
-      - name: Instalar dependências
-        run: flutter pub get
-
-      - name: Build iOS (sem assinatura)
-        run: flutter build ios --release --no-codesign
-
-      - name: Upload artefatos iOS
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-build
-          path: build/ios/iphoneos
-          retention-days: 7
-
-      # -----------------------------
-      # 🚀 Publicação no TestFlight (Comentada)
-      # -----------------------------
-      # - name: Upload to TestFlight
-      #   uses: apple-actions/upload-testflight@v1
-      #   with:
-      #     app-path: build/ios/ipa/*.ipa
-      #     issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-      #     api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
-      #     api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+# -----------------------------
+# iOS temporariamente comentado
+# -----------------------------
+# build_ios:
+#   name: Build iOS
+#   runs-on: macos-latest
+#
+#   steps:
+#     - name: Checkout código
+#       uses: actions/checkout@v4
+#
+#     - name: Configurar Flutter
+#       uses: subosito/flutter-action@v2
+#       with:
+#         flutter-version: '3.24.0'
+#
+#     - name: Instalar dependências
+#       run: flutter pub get
+#
+#     - name: Build iOS (sem assinatura)
+#       run: flutter build ios --release --no-codesign
+#
+#     - name: Upload artefatos iOS
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: ios-build
+#         path: build/ios/iphoneos
+#         retention-days: 7
