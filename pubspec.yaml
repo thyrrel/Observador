@@ -1,30 +1,36 @@
 name: observador
-description: Um aplicativo Flutter para monitoramento e observação de dispositivos e redes.
+description: Dashboard de rede com controle de banda, IA e três planos.
 publish_to: "none"
-version: 1.0.0+1
+version: 2.0.0+200
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-
-  # Dependências principais
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.6
+  shared_preferences: ^2.5.3
+  sqflite: ^2.4.1
   path_provider: ^2.1.5
-  provider: ^6.1.2
-  shared_preferences: ^2.3.3
-  http: ^1.2.2
-  connectivity_plus: ^6.1.0
-  local_auth: ^2.3.0
-  flutter_local_notifications: ^17.2.2
-  background_fetch: ^1.2.3
+  http: ^1.1.0
+  in_app_purchase: ^3.1.6
+  flutter_local_notifications: ^18.0.1
+  syncfusion_flutter_charts: ^30.2.4
+  workmanager: ^0.5.1
+  dartssh2: ^2.8.2
+  pdf: ^3.10.4
+  share_plus: ^7.2.1
+  uuid: ^4.5.1
+  provider: ^6.1.5+1
+  local_auth: ^1.0.51
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
