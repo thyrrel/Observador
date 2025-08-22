@@ -54,56 +54,29 @@ jobs:
       #     track: internal
       #     status: completed
 
-  build_ios:
-    name: Build iOS
+  name: Build iOS
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout código
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configurar Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.24.3'
 
-      # Gera a estrutura iOS dentro do runner e define o org = com.thyrrel
-      - name: Preparar projeto iOS (gerar ios/)
-        run: |
-          flutter --version
-          flutter create --platforms=ios --org com.thyrrel .
-          # Garantir iOS 12.0 no Podfile
-          sed -i '' "s/platform :ios, '.*'/platform :ios, '12.0'/" ios/Podfile
-
-      - name: Instalar dependências do Flutter
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Instalar CocoaPods
-        run: |
-          cd ios
-          pod install --repo-update
-
-      - name: Build iOS (IPA, sem assinatura)
-        run: flutter build ipa --release --no-codesign
-
-      - name: Upload artefato (IPA)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-build
-          path: build/ios/ipa/*.ipa
-          retention-days: 7
-
-      # -----------------------------
-      # 🚀 Publicação no TestFlight (Comentada)
-      # -----------------------------
-      # - name: Instalar Fastlane
-      #   run: sudo gem install fastlane -NV
-      #
-      # - name: Upload to TestFlight
-      #   run: |
-      #     fastlane pilot upload \
-      #       --api_key_path ./fastlane/api_key.json \
-      #       --ipa build/ios/ipa/Observador.ipa \
-      #       --skip_submission true \
-      #       --skip_waiting_for_build_processing true
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
