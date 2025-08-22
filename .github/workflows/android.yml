@@ -1,3 +1,4 @@
+# Commit message: Adiciona upload de APK
 name: Observador
 
 on:
@@ -5,36 +6,25 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: stable
 
-      - name: Limpar caches do Gradle
-        run: |
-          flutter clean
-          rm -rf ~/.gradle/caches
-          rm -rf ~/.gradle/wrapper
+      - run: flutter clean
+      - run: rm -rf ~/.gradle/caches ~/.gradle/wrapper
+      - run: flutter pub get
+      - run: flutter build apk --release
 
-      - name: Instalar dependências
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: Observador-APK
+          name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
