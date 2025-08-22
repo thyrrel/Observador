@@ -2,14 +2,9 @@
     package="com.thyrrel.observador">
 
     <application
-        android:name="${applicationName}"
         android:label="Observador"
+        android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-
-        <!-- Ativa o Flutter Embedding v2 -->
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
 
         <activity
             android:name=".MainActivity"
@@ -20,7 +15,6 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- Configuração de tela inicial -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
