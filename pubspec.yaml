@@ -1,36 +1,27 @@
-name: Observador
-description: Dashboard de rede com controle de banda, IA e três planos.
-publish_to: "none"
-version: 2.0.0+200
+name: observador
+description: Aplicativo Observador
+version: 1.0.0+1
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  shared_preferences: ^2.5.3
-  sqflite: ^2.4.1
-  path_provider: ^2.2.15
-  http: ^1.1.0
-  in_app_purchase: ^3.1.6
-  flutter_local_notifications: ^18.0.1
-  syncfusion_flutter_charts: ^30.2.4
-  workmanager: ^0.5.1
-  dartssh2: ^2.8.2
-  pdf: ^3.10.4
-  share_plus: ^7.2.1
-  uuid: ^4.5.1
+
+  cupertino_icons: ^1.0.5
   provider: ^6.1.5+1
+  shared_preferences: ^2.5.3
   local_auth: ^1.0.51
+  path_provider: ^2.2.17
+  http: ^1.1.0
+  flutter_local_notifications: ^12.0.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.1
+  flutter_lints: ^2.0.1
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
