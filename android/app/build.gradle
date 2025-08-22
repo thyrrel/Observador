@@ -1,20 +1,33 @@
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
+def localProperties = new File(rootProject.rootDir, "local.properties")
+def flutterRoot = localProperties.exists() ? new Properties().with { 
+    load(new FileInputStream(localProperties)); getProperty('flutter.sdk') 
+} : System.getenv("FLUTTER_ROOT")
+def flutterVersionCode = localProperties.exists() ? new Properties().with { 
+    load(new FileInputStream(localProperties)); getProperty('flutter.versionCode') 
+} : null
+def flutterVersionName = localProperties.exists() ? new Properties().with { 
+    load(new FileInputStream(localProperties)); getProperty('flutter.versionName') 
+} : null
+
+apply plugin: "com.android.application"
+apply plugin: "kotlin-android"
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    namespace "com.thyrrel.observador"
-    compileSdkVersion 34 // versão mais recente estável
+    compileSdkVersion 33
 
     defaultConfig {
-        applicationId "com.thyrrel.observador"
+        applicationId "com.seuusuario.observador"
         minSdkVersion 21
-        targetSdkVersion 34
-        versionCode 1
-        versionName "1.0"
-        multiDexEnabled true
+        targetSdkVersion 33
+        versionCode 1           // workflow irá substituir
+        versionName "1.0.0"    // workflow irá substituir
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("debug.keystore")
+        }
     }
 
     buildTypes {
