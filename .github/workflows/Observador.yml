@@ -2,111 +2,94 @@ name: Observador
 
 on:
   push:
-    branches: [ "main" ]
-    tags:
-      - 'v*'
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
-  build:
+  build_android:
+    name: Build Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Build App Bundle (.aab)
+        run: flutter build appbundle --release
+
+      - name: Upload artefatos (APK e AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: build/app/outputs/**/*.apk
+          retention-days: 7
+
+      # -----------------------------
+      # 🚀 Publicação na Google Play (Comentada)
+      # -----------------------------
+      # - name: Deploy to Google Play
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+      #     packageName: com.seuprojeto.observador
+      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
+      #     track: internal
+      #     status: completed
+
+  build_ios:
+    name: Build iOS
     runs-on: macos-latest
 
     steps:
-      - name: Checkout do repositório
+      - name: Checkout código
         uses: actions/checkout@v4
 
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.1"
-          channel: stable
-
-      - name: Limpar build anterior
-        run: flutter clean
+          flutter-version: '3.24.0'
 
       - name: Instalar dependências
         run: flutter pub get
 
-      - name: Atualizar plugins (force upgrade)
-        run: |
-          flutter pub outdated || true
-          flutter pub upgrade
+      - name: Build iOS (IPA)
+        run: flutter build ipa --release --no-codesign
 
-      - name: Obter versão do build
-        id: version
-        run: |
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            BUILD_TYPE="pr"
-            BUILD_VERSION="pr"
-          else
-            if [[ "${GITHUB_REF##*/}" == v* ]]; then
-              BUILD_TYPE="release"
-              BUILD_VERSION="${GITHUB_REF##*/}"
-            else
-              BUILD_TYPE="beta"
-              BUILD_VERSION="beta"
-            fi
-          fi
-
-          echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_ENV
-          echo "BUILD_TYPE=$BUILD_TYPE" >> $GITHUB_ENV
-
-          if [[ "$BUILD_TYPE" == "pr" ]]; then
-            VERSION_CODE=10000
-          elif [[ "$BUILD_TYPE" == "beta" ]]; then
-            VERSION_CODE=20000
-          else
-            CLEAN_VERSION=$(echo $BUILD_VERSION | sed 's/^v//' | sed 's/[^0-9\.]//g')
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$CLEAN_VERSION"
-            MAJOR=${MAJOR:-0}
-            MINOR=${MINOR:-0}
-            PATCH=${PATCH:-0}
-            VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
-          fi
-
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "Versão do build: $BUILD_VERSION, versionCode: $VERSION_CODE, tipo: $BUILD_TYPE"
-
-      - name: Atualizar versionCode e versionName no build.gradle
-        run: |
-          BUILD_FILE="android/app/build.gradle"
-          sed -i '' "s/versionCode [0-9]\+/versionCode $VERSION_CODE/" $BUILD_FILE
-          sed -i '' "s/versionName \".*\"/versionName \"$BUILD_VERSION\"/" $BUILD_FILE
-          echo "Versão atualizada no build.gradle:"
-          grep "version" $BUILD_FILE
-
-      - name: Build APK (Android release)
-        run: flutter build apk --release --build-name=$BUILD_VERSION --build-number=$VERSION_CODE
-
-      - name: Build AAB (Android release)
-        run: flutter build appbundle --release --build-name=$BUILD_VERSION --build-number=$VERSION_CODE
-
-      - name: Build iOS (release)
-        run: flutter build ios --release --no-codesign --build-name=$BUILD_VERSION --build-number=$VERSION_CODE
-
-      - name: Exportar .ipa para TestFlight
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
-        run: |
-          xcodebuild -workspace ios/Runner.xcworkspace \
-                     -scheme Runner \
-                     -configuration Release \
-                     -archivePath $PWD/build/ios/Runner.xcarchive archive
-          xcodebuild -exportArchive \
-                     -archivePath $PWD/build/ios/Runner.xcarchive \
-                     -exportOptionsPlist ios/ExportOptions.plist \
-                     -exportPath $PWD/build/ios/ipa
-
-      - name: Upload de APK, AAB e IPA (sem compressão)
+      - name: Upload artefato (IPA)
         uses: actions/upload-artifact@v4
         with:
-          name: observador-$BUILD_TYPE-$BUILD_VERSION
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
-            build/ios/ipa/Runner.ipa
-          compression-level: 0
-          if-no-files-found: error
+          name: ios-build
+          path: build/ios/ipa/*.ipa
+          retention-days: 7
+
+      # -----------------------------
+      # 🚀 Publicação no TestFlight (Comentada)
+      # -----------------------------
+      # - name: Instalar Fastlane
+      #   run: sudo gem install fastlane -NV
+      #
+      # - name: Upload to TestFlight
+      #   run: |
+      #     fastlane pilot upload \
+      #       --api_key_path ./fastlane/api_key.json \
+      #       --ipa build/ios/ipa/Observador.ipa \
+      #       --skip_submission true \
+      #       --skip_waiting_for_build_processing true
