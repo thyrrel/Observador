@@ -67,13 +67,27 @@ jobs:
         with:
           flutter-version: '3.24.0'
 
-      - name: Instalar dependências
+      # Gera a estrutura iOS dentro do runner e define o org = com.thyrrel
+      - name: Preparar projeto iOS (gerar ios/)
+        run: |
+          flutter --version
+          flutter create --platforms=ios --org com.thyrrel .
+          # Garantir iOS 12.0 no Podfile
+          sed -i '' "s/platform :ios, '.*'/platform :ios, '12.0'/" ios/Podfile
+
+      - name: Instalar dependências do Flutter
         run: flutter pub get
 
-      - name: Build iOS (IPA)
+      - name: Instalar CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build iOS (IPA, sem assinatura)
         run: flutter build ipa --release --no-codesign
 
       - name: Upload artefato (IPA)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-build
