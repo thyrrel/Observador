@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+GRADLE_HOME="${GRADLE_HOME:-$HOME/.gradle}"
+exec "$GRADLE_HOME/wrapper/dists"/*/gradle-*/bin/gradle "$@"
