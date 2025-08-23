@@ -29,11 +29,11 @@ jobs:
       - name: Tornar gradlew executável
         run: chmod +x android/gradlew
 
-      - name: Baixar gradle-wrapper.jar correto
+      - name: Baixar Gradle Wrapper correto
         run: |
-          mkdir -p android/gradle/wrapper/
-          curl -L -o android/gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.2.1/gradle-wrapper/src/main/resources/gradle-wrapper.jar
-          chmod +x android/gradlew
+          wget -O gradle_temp.zip https://services.gradle.org/distributions/gradle-8.2.1-all.zip
+          unzip -j gradle_temp.zip "gradle-8.2.1/gradle/wrapper/gradle-wrapper.jar" -d android/gradle/wrapper/
+          rm gradle_temp.zip
 
       - name: Instalar dependências
         run: flutter pub get
@@ -55,3 +55,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
