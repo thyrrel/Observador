@@ -31,9 +31,8 @@ jobs:
 
       - name: Baixar gradle-wrapper.jar correto
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.2.1-all.zip -O gradle.zip
-          unzip gradle.zip -d gradle_temp
-          cp gradle_temp/gradle-8.2.1/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/
+          mkdir -p android/gradle/wrapper/
+          curl -L -o android/gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.2.1-all.zip
           chmod +x android/gradlew
 
       - name: Instalar dependências
@@ -75,11 +74,8 @@ jobs:
 #       with:
 #         flutter-version: '3.24.0'
 #
-#     - name: Forçar upgrade do Flutter
-#       run: flutter upgrade --force
-#
-#     - name: Atualizar dependências
-#       run: flutter pub upgrade --major-versions
+#     - name: Tornar gradlew executável
+#       run: chmod +x android/gradlew
 #
 #     - name: Instalar dependências
 #       run: flutter pub get
