@@ -6,10 +6,6 @@ on:
       - main
   pull_request:
 
-defaults:
-  run:
-    working-directory: Observador   # <-- entra na pasta correta
-
 jobs:
   build_android:
     name: Build Android
@@ -46,12 +42,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: Observador/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: android-aab
-          path: Observador/build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 7
