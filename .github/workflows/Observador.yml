@@ -32,7 +32,7 @@ jobs:
       - name: Baixar gradle-wrapper.jar correto
         run: |
           mkdir -p android/gradle/wrapper/
-          curl -L -o android/gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.2.1-all.zip
+          curl -L -o android/gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.2.1/gradle-wrapper/src/main/resources/gradle-wrapper.jar
           chmod +x android/gradlew
 
       - name: Instalar dependências
@@ -55,37 +55,3 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 7
-
-# -----------------------------
-# iOS temporariamente comentado
-# -----------------------------
-# build_ios:
-#   name: Build iOS
-#   runs-on: macos-latest
-#
-#   steps:
-#     - name: Checkout código
-#       uses: actions/checkout@v4
-#
-#     - name: Configurar Flutter
-#       uses: subosito/flutter-action@v2
-#       with:
-#         flutter-version: '3.24.0'
-#
-#     - name: Tornar gradlew executável
-#       run: chmod +x android/gradlew
-#
-#     - name: Instalar dependências
-#       run: flutter pub get
-#
-#     - name: Build iOS (sem assinatura)
-#       run: flutter build ios --release --no-codesign
-#
-#     - name: Upload artefatos iOS
-#       uses: actions/upload-artifact@v4
-#       with:
-#         name: ios-build
-#         path: build/ios/iphoneos
-#         retention-days: 7
