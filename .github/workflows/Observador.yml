@@ -26,6 +26,12 @@ jobs:
         with:
           flutter-version: '3.24.0'
 
+      - name: Forçar upgrade do Flutter
+        run: flutter upgrade --force
+
+      - name: Atualizar dependências
+        run: flutter pub upgrade --major-versions
+
       - name: Instalar dependências
         run: flutter pub get
 
@@ -76,6 +82,12 @@ jobs:
 #       uses: subosito/flutter-action@v2
 #       with:
 #         flutter-version: '3.24.0'
+#
+#     - name: Forçar upgrade do Flutter
+#       run: flutter upgrade --force
+#
+#     - name: Atualizar dependências
+#       run: flutter pub upgrade --major-versions
 #
 #     - name: Instalar dependências
 #       run: flutter pub get
