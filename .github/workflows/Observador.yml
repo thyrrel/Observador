@@ -26,6 +26,12 @@ jobs:
         with:
           flutter-version: '3.24.0'
 
+      - name: Forçar upgrade do Flutter
+        run: flutter upgrade --force
+
+      - name: Atualizar dependências para maiores versões
+        run: flutter pub upgrade --major-versions
+
       - name: Tornar gradlew executável
         run: chmod +x android/gradlew
 
