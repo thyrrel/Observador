@@ -8,7 +8,6 @@
         android:allowBackup="false"
         android:fullBackupContent="false">
 
-        <!-- 🔑 Ativa v2 embedding -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
