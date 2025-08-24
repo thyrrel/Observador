@@ -30,14 +30,8 @@ jobs:
           flutter-version: '3.24.0'
 
       # 4. Garantir que o Gradle Wrapper está presente e executável
-      - name: Configurar Gradle Wrapper
-        run: |
-          if [ ! -f android/gradlew ]; then
-            echo "gradlew não encontrado! Build não pode prosseguir."
-            exit 1
-          fi
-          chmod +x android/gradlew
-          echo "Gradle Wrapper pronto para uso."
+      - name: Tornar gradlew executável
+        run: chmod +x android/gradlew
 
       # 5. Instalar dependências Flutter
       - name: Instalar dependências
@@ -47,4 +41,22 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      # 7. Build App Bundle (.a
+      # 7. Build App Bundle (.aab)
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+
+      # 8. Upload APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
+
+      # 9. Upload AAB
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
