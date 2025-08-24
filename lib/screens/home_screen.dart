@@ -1,12 +1,10 @@
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../services/notification_service.dart';
-import '../services/auth_service.dart';
 import '../services/network_service.dart';
-import '../providers/network_provider.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -14,32 +12,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late NetworkService _networkService;
-  String _statusText = "Checando conexão...";
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
     _networkService = NetworkService();
-
-    // Inicia monitoramento contínuo
-    _networkService.startMonitoring();
-    _networkService.initBackgroundFetch();
-
-    // Escuta mudanças de conexão
-    _networkService.connectionStream.listen((connected) {
-      setState(() {
-        _statusText = connected ? "Conectado à Internet" : "Sem conexão";
-      });
-
-      // Notificação quando houver mudança
-      NotificationService().showNotification(
-        "Status de Rede",
-        _statusText,
-      );
-    });
-
-    // Autenticação biométrica ao abrir o app
-    AuthService().authenticate();
   }
 
   @override
@@ -48,18 +26,46 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _authenticateUser() async {
+    bool authenticated = await _authService.authenticate();
+    if (!authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Falha na autenticação')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Observador'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.fingerprint),
+            onPressed: _authenticateUser,
+          ),
+        ],
       ),
-      body: Center(
-        child: Text(
-          _statusText,
-          style: const TextStyle(fontSize: 24),
-        ),
+      body: StreamBuilder<List<String>>(
+        stream: _networkService.devicesStream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final devices = snapshot.data!;
+          if (devices.isEmpty) {
+            return const Center(child: Text('Nenhum dispositivo conectado'));
+          }
+          return ListView.builder(
+            itemCount: devices.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                leading: const Icon(Icons.wifi),
+                title: Text(devices[index]),
+              );
+            },
+          );
+        },
       ),
-    );
-  }
-}
+      floatingActionButton: Floating
