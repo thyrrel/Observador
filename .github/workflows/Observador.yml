@@ -12,48 +12,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Clonar repositório
       - name: Checkout código
         uses: actions/checkout@v4
 
+      # 2. Configurar Java 17
       - name: Configurar Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
+      # 3. Configurar Flutter 3.24
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
 
-      - name: Verificar Gradle Wrapper
+      # 4. Garantir que o Gradle Wrapper está presente e executável
+      - name: Configurar Gradle Wrapper
         run: |
           if [ ! -f android/gradlew ]; then
             echo "gradlew não encontrado! Build não pode prosseguir."
             exit 1
           fi
           chmod +x android/gradlew
-          echo "gradlew configurado corretamente."
+          echo "Gradle Wrapper pronto para uso."
 
+      # 5. Instalar dependências Flutter
       - name: Instalar dependências
         run: flutter pub get
 
+      # 6. Build APK Release
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Build App Bundle (.aab)
-        run: flutter build appbundle --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
-
-      - name: Upload AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 7
+      # 7. Build App Bundle (.a
