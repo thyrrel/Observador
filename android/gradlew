@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Gradle wrapper script
+
+# Caminho relativo para o jar do wrapper
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec java -jar "$DIR/gradle/wrapper/gradle-wrapper.jar" "$@"
