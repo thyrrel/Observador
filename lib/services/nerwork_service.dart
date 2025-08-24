@@ -1,80 +1,54 @@
-// lib/services/network_service.dart
-import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 import '../models/device_model.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 
 class NetworkService {
-  final StreamController<List<DeviceModel>> _devicesController =
-      StreamController<List<DeviceModel>>.broadcast();
-
-  List<DeviceModel> _devices = [];
-
   final NetworkInfo _networkInfo = NetworkInfo();
 
-  NetworkService() {
-    scanNetwork(); // inicia scan automaticamente
+  // Descobre IP do gateway
+  Future<String?> getGatewayIP() async {
+    return await _networkInfo.getWifiGatewayIP();
   }
 
-  Stream<List<DeviceModel>> get devicesStream => _devicesController.stream;
-
-  void _updateDevicesStream() {
-    _devicesController.add(List.unmodifiable(_devices));
-  }
-
-  /// Escaneia a rede local e detecta dispositivos ativos
-  Future<void> scanNetwork() async {
-    _devices = [];
-    String? ip = await _networkInfo.getWifiIP();
-    String? subnet = await _networkInfo.getWifiSubmask();
-
-    if (ip == null || subnet == null) return;
-
-    // Obtém o prefixo da sub-rede (ex: 192.168.0)
-    List<String> parts = ip.split('.');
-    String prefix = '${parts[0]}.${parts[1]}.${parts[2]}';
-
+  // Escaneia a sub-rede para descobrir dispositivos ativos
+  Future<List<DeviceModel>> scanNetwork(String subnetPrefix) async {
+    List<DeviceModel> devices = [];
     for (int i = 1; i <= 254; i++) {
-      String testIp = '$prefix.$i';
-      bool reachable = await _ping(testIp);
-      if (reachable && testIp != ip) {
-        // Cria DeviceModel real
-        _devices.add(DeviceModel(
-          name: 'Dispositivo $i',
-          ip: testIp,
-          isBlocked: false,
-        ));
-        _updateDevicesStream();
+      String ip = '$subnetPrefix.$i';
+      try {
+        final socket = await Socket.connect(ip, 80, timeout: Duration(milliseconds: 500));
+        socket.destroy();
+        String mac = await getMacFromIP(ip);
+        String manufacturer = lookupManufacturer(mac);
+        devices.add(DeviceModel(name: manufacturer, ip: ip, mac: mac, manufacturer: manufacturer));
+      } catch (_) {}
+    }
+    return devices;
+  }
+
+  // Obtém MAC address via tabela ARP (necessita permissões e root em alguns casos)
+  Future<String> getMacFromIP(String ip) async {
+    try {
+      final result = await Process.run('arp', ['-n', ip]);
+      final lines = result.stdout.toString().split('\n');
+      if (lines.length > 1) {
+        final parts = lines[1].split(' ').where((e) => e.isNotEmpty).toList();
+        if (parts.length >= 3) return parts[2];
       }
-    }
+    } catch (_) {}
+    return '';
   }
 
-  /// Verifica se o IP está ativo (ping)
-  Future<bool> _ping(String ip) async {
-    try {
-      final result = await Process.run(
-        'ping',
-        ['-c', '1', '-W', '1', ip],
-        runInShell: true,
-      );
-      return result.exitCode == 0;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// Checa conexão com a internet
-  Future<bool> checkInternetConnection() async {
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException {
-      return false;
-    }
-  }
-
-  void dispose() {
-    _devicesController.close();
+  // Identifica fabricante pelo prefixo MAC (OUI)
+  String lookupManufacturer(String mac) {
+    Map<String, String> ouiDatabase = {
+      "00:1A:2B": "TP-Link",
+      "3C:5A:B4": "Xiaomi",
+      "00:26:BB": "ASUS",
+      // Adicione outros fabricantes
+    };
+    if (mac.length < 8) return "Desconhecido";
+    String prefix = mac.substring(0, 8).toUpperCase();
+    return ouiDatabase[prefix] ?? "Desconhecido";
   }
 }
