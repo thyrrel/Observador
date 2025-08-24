@@ -1,99 +1,74 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import '../services/network_service.dart';
-import '../services/auth_service.dart';
 import '../models/device_model.dart';
+import '../services/network_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late NetworkService _networkService;
-  final AuthService _authService = AuthService();
+  final NetworkService _networkService = NetworkService();
+  List<DeviceModel> devices = [];
+  bool scanning = false;
 
   @override
   void initState() {
     super.initState();
-    _networkService = NetworkService();
+    _scanNetwork();
   }
 
-  @override
-  void dispose() {
-    _networkService.dispose();
-    super.dispose();
-  }
-
-  Future<void> _authenticateUser() async {
-    bool authenticated = await _authService.authenticate();
-    if (!authenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falha na autenticação')),
-      );
+  Future<void> _scanNetwork() async {
+    setState(() => scanning = true);
+    String? gateway = await _networkService.getGatewayIP();
+    if (gateway != null) {
+      String subnet = gateway.substring(0, gateway.lastIndexOf('.'));
+      devices = await _networkService.scanNetwork(subnet);
     }
+    setState(() => scanning = false);
   }
 
-  void _toggleBlock(DeviceModel device) {
-    setState(() {
-      device.isBlocked = !device.isBlocked;
-    });
-    // Aqui você pode integrar API do roteador para bloquear/desbloquear
+  void _editDeviceName(DeviceModel device) {
+    TextEditingController controller = TextEditingController(text: device.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Renomear dispositivo'),
+        content: TextField(controller: controller),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() => device.name = controller.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Observador'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.fingerprint),
-            onPressed: _authenticateUser,
-          ),
-        ],
-      ),
-      body: StreamBuilder<List<DeviceModel>>(
-        stream: _networkService.devicesStream,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final devices = snapshot.data!;
-          if (devices.isEmpty) {
-            return const Center(child: Text('Nenhum dispositivo conectado'));
-          }
-          return ListView.builder(
-            itemCount: devices.length,
-            itemBuilder: (context, index) {
-              final device = devices[index];
-              return ListTile(
-                leading: Icon(
-                  device.isBlocked ? Icons.lock : Icons.wifi,
-                  color: device.isBlocked ? Colors.red : Colors.green,
-                ),
-                title: Text(device.name),
-                subtitle: Text('IP: ${device.ip}'),
-                trailing: IconButton(
-                  icon: Icon(
-                    device.isBlocked ? Icons.lock_open : Icons.lock,
-                    color: device.isBlocked ? Colors.orange : Colors.grey,
+      appBar: AppBar(title: const Text('Observador - Dispositivos')),
+      body: scanning
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: devices.length,
+              itemBuilder: (context, index) {
+                final device = devices[index];
+                return ListTile(
+                  title: Text(device.name),
+                  subtitle: Text('${device.ip} | ${device.mac} | ${device.manufacturer}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _editDeviceName(device),
                   ),
-                  onPressed: () => _toggleBlock(device),
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _networkService.scanNetwork();
-        },
-        child: const Icon(Icons.refresh),
-      ),
+                );
+              },
+            ),
     );
   }
 }
