@@ -3,26 +3,27 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import '../models/device_model.dart';
 
 class NetworkService {
-  final StreamController<List<String>> _devicesController =
-      StreamController<List<String>>.broadcast();
+  final StreamController<List<DeviceModel>> _devicesController =
+      StreamController<List<DeviceModel>>.broadcast();
 
-  List<String> _devices = [];
+  List<DeviceModel> _devices = [];
 
   final NetworkInfo _networkInfo = NetworkInfo();
 
   NetworkService() {
-    scanNetwork(); // inicia o scan automaticamente
+    scanNetwork(); // inicia scan automaticamente
   }
 
-  Stream<List<String>> get devicesStream => _devicesController.stream;
+  Stream<List<DeviceModel>> get devicesStream => _devicesController.stream;
 
   void _updateDevicesStream() {
-    _devicesController.add(_devices);
+    _devicesController.add(List.unmodifiable(_devices));
   }
 
-  /// Varre a rede local e identifica dispositivos ativos
+  /// Escaneia a rede local e detecta dispositivos ativos
   Future<void> scanNetwork() async {
     _devices = [];
     String? ip = await _networkInfo.getWifiIP();
@@ -34,18 +35,22 @@ class NetworkService {
     List<String> parts = ip.split('.');
     String prefix = '${parts[0]}.${parts[1]}.${parts[2]}';
 
-    // Escaneia os IPs de 1 a 254
     for (int i = 1; i <= 254; i++) {
       String testIp = '$prefix.$i';
       bool reachable = await _ping(testIp);
       if (reachable && testIp != ip) {
-        _devices.add(testIp);
+        // Cria DeviceModel real
+        _devices.add(DeviceModel(
+          name: 'Dispositivo $i',
+          ip: testIp,
+          isBlocked: false,
+        ));
         _updateDevicesStream();
       }
     }
   }
 
-  /// Ping simples para verificar se o IP está ativo
+  /// Verifica se o IP está ativo (ping)
   Future<bool> _ping(String ip) async {
     try {
       final result = await Process.run(
@@ -53,14 +58,13 @@ class NetworkService {
         ['-c', '1', '-W', '1', ip],
         runInShell: true,
       );
-      if (result.exitCode == 0) return true;
+      return result.exitCode == 0;
     } catch (e) {
       return false;
     }
-    return false;
   }
 
-  /// Checa se há internet
+  /// Checa conexão com a internet
   Future<bool> checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('google.com');
