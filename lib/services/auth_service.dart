@@ -1,21 +1,19 @@
+// lib/services/auth_service.dart
 import 'package:local_auth/local_auth.dart';
 
 class AuthService {
   final LocalAuthentication _auth = LocalAuthentication();
 
-  Future<void> init() async {
-    // Inicialização opcional
-  }
-
   Future<bool> authenticate() async {
     try {
-      bool canCheck = await _auth.canCheckBiometrics;
-      if (!canCheck) return false;
-
-      return await _auth.authenticate(
-        localizedReason: 'Autentique-se para acessar o Observador',
-        biometricOnly: true,
+      final bool didAuthenticate = await _auth.authenticate(
+        localizedReason: 'Autentique-se para continuar',
+        options: const AuthenticationOptions(
+          stickyAuth: true, // Permite reautenticação
+          // biometricOnly: true, // Removido para compatibilidade
+        ),
       );
+      return didAuthenticate;
     } catch (e) {
       return false;
     }
