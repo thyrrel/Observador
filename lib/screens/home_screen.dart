@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../services/network_service.dart';
 import '../services/auth_service.dart';
+import '../models/device_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,6 +36,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _toggleBlock(DeviceModel device) {
+    setState(() {
+      device.isBlocked = !device.isBlocked;
+    });
+    // Aqui você pode integrar API do roteador para bloquear/desbloquear
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<String>>(
+      body: StreamBuilder<List<DeviceModel>>(
         stream: _networkService.devicesStream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -60,12 +68,32 @@ class _HomeScreenState extends State<HomeScreen> {
           return ListView.builder(
             itemCount: devices.length,
             itemBuilder: (context, index) {
+              final device = devices[index];
               return ListTile(
-                leading: const Icon(Icons.wifi),
-                title: Text(devices[index]),
+                leading: Icon(
+                  device.isBlocked ? Icons.lock : Icons.wifi,
+                  color: device.isBlocked ? Colors.red : Colors.green,
+                ),
+                title: Text(device.name),
+                subtitle: Text('IP: ${device.ip}'),
+                trailing: IconButton(
+                  icon: Icon(
+                    device.isBlocked ? Icons.lock_open : Icons.lock,
+                    color: device.isBlocked ? Colors.orange : Colors.grey,
+                  ),
+                  onPressed: () => _toggleBlock(device),
+                ),
               );
             },
           );
         },
       ),
-      floatingActionButton: Floating
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _networkService.scanNetwork();
+        },
+        child: const Icon(Icons.refresh),
+      ),
+    );
+  }
+}
