@@ -26,14 +26,14 @@ jobs:
         with:
           flutter-version: '3.24.0'
 
-      - name: Tornar gradlew executável
-        run: chmod +x android/gradlew
-
-      - name: Baixar Gradle Wrapper correto
+      - name: Verificar Gradle Wrapper
         run: |
-          wget -O gradle_temp.zip https://services.gradle.org/distributions/gradle-8.2.1-all.zip
-          unzip -j gradle_temp.zip "gradle-8.2.1/gradle/wrapper/gradle-wrapper.jar" -d android/gradle/wrapper/
-          rm gradle_temp.zip
+          if [ ! -f android/gradlew ]; then
+            echo "gradlew não encontrado! Build não pode prosseguir."
+            exit 1
+          fi
+          chmod +x android/gradlew
+          echo "gradlew configurado corretamente."
 
       - name: Instalar dependências
         run: flutter pub get
