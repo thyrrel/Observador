@@ -3,7 +3,7 @@ class DeviceModel {
   String ip;
   String mac;
   String manufacturer;
-  String type; // Smartphone, PC, IoT, Tablet, etc.
+  String type;
   bool isBlocked;
 
   DeviceModel({
@@ -14,4 +14,22 @@ class DeviceModel {
     this.type = "Desconhecido",
     this.isBlocked = false,
   });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'ip': ip,
+    'mac': mac,
+    'manufacturer': manufacturer,
+    'type': type,
+    'isBlocked': isBlocked,
+  };
+
+  factory DeviceModel.fromJson(Map<String, dynamic> json) => DeviceModel(
+    name: json['name'],
+    ip: json['ip'],
+    mac: json['mac'],
+    manufacturer: json['manufacturer'],
+    type: json['type'],
+    isBlocked: json['isBlocked'],
+  );
 }
