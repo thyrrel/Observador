@@ -2,39 +2,55 @@ name: Observador
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-  build_android:
+  build:
+    name: Build Flutter
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
 
-      - name: Install dependencies
+      - name: Instalar dependências
         run: flutter pub get
 
-      - name: Run analyze
+      - name: Verificar formatação
+        run: flutter format --set-exit-if-changed .
+
+      - name: Analisar código
         run: flutter analyze
 
-      - name: Run tests
+      - name: Rodar testes
         run: flutter test
 
-      - name: Build APK release
+      - name: Build APK
         run: flutter build apk --release
+
+      - name: Build AppBundle
+        run: flutter build appbundle --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Observador-release-apk
+          name: Observador-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload AppBundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Observ
