@@ -27,3 +27,9 @@ Future<bool> _prioritizeDLink(String mac, int priority) async {
   print('D-Link: priorizando $mac com prioridade $priority');
   return true;
 }
+/// Passo 8 – Conectar VPN para dispositivo específico
+Future<bool> connectVPNForDevice(String mac) async {
+  // Exemplo: VPN via WireGuard/OpenVPN API
+  print('Conectando VPN para $mac');
+  return true;
+}
