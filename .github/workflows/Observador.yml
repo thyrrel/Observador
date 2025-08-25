@@ -1,4 +1,4 @@
-name: Observador
+name: Build Observador APK
 
 on:
   push:
