@@ -1,52 +1,37 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../models/device_model.dart';
+import 'dart:io';
 
 class RouterService {
   final String routerIP;
-  final String token;
+  final String token; // Pode ser senha admin ou token da API
 
   RouterService({required this.routerIP, required this.token});
 
-  Map<String, String> get headers => {
-    'Authorization': 'Bearer $token',
-    'Content-Type': 'application/json',
-  };
-
-  Future<List<DeviceModel>> getDevices() async {
-    final response = await http.get(Uri.parse('http://$routerIP/devices'), headers: headers);
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      return data.map((e) => DeviceModel.fromJson(e)).toList();
+  Future<String> detectRouterType() async {
+    // Detecta gateway padrão
+    ProcessResult result = await Process.run('ip', ['route']);
+    String gateway = '';
+    if (result.stdout != null) {
+      final lines = result.stdout.toString().split('\n');
+      for (var line in lines) {
+        if (line.contains('default via')) {
+          gateway = line.split(' ')[2];
+          break;
+        }
+      }
     }
-    return [];
-  }
 
-  Future<bool> blockDevice(String mac) async {
-    final response = await http.post(
-      Uri.parse('http://$routerIP/block'),
-      headers: headers,
-      body: jsonEncode({'mac': mac}),
-    );
-    return response.statusCode == 200;
-  }
-
-  Future<bool> unblockDevice(String mac) async {
-    final response = await http.post(
-      Uri.parse('http://$routerIP/unblock'),
-      headers: headers,
-      body: jsonEncode({'mac': mac}),
-    );
-    return response.statusCode == 200;
-  }
-
-  Future<bool> startVPN() async {
-    final response = await http.post(Uri.parse('http://$routerIP/vpn/start'), headers: headers);
-    return response.statusCode == 200;
-  }
-
-  Future<bool> stopVPN() async {
-    final response = await http.post(Uri.parse('http://$routerIP/vpn/stop'), headers: headers);
-    return response.statusCode == 200;
+    // Tentativa de fingerprint via HTTP
+    try {
+      final response = await HttpClient()
+          .getUrl(Uri.parse('http://$gateway'))
+          .then((req) => req.close());
+      if (response.statusCode == 200) {
+        final headers = response.headers.value('Server') ?? '';
+        if (headers.contains('TP-LINK')) return 'TP-Link';
+        if (headers.contains('ASUS')) return 'ASUS';
+        if (headers.contains('D-Link')) return 'D-Link';
+      }
+    } catch (_) {}
+    return 'Desconhecido';
   }
 }
