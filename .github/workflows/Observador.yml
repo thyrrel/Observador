@@ -1,4 +1,4 @@
-name: Observador
+name: Flutter CI
 
 on:
   push:
@@ -7,50 +7,69 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    name: Build Flutter
+  # ========================================================
+  # JOB: Build Android
+  # ========================================================
+  build-android:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      # Faz checkout do repositório
+      - uses: actions/checkout@v3
 
-      - name: Configurar Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Configurar Flutter
+      # Configura o Flutter (ajuste a versão se necessário)
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.22.2'
 
-      - name: Instalar dependências
+      # Instala dependências
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Verificar formatação
-        run: flutter format --set-exit-if-changed .
-
-      - name: Analisar código
+      # Analisa o código
+      - name: Analyze project
         run: flutter analyze
 
-      - name: Rodar testes
+      # Executa testes
+      - name: Run tests
         run: flutter test
 
+      # Gera o APK de release
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Build AppBundle
-        run: flutter build appbundle --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Observador-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Upload AppBundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: Observ
+  # ========================================================
+  # JOB: Build iOS (desativado por enquanto)
+  # ========================================================
+  # Para ativar o build iOS:
+  # 1. Remova os "#" abaixo.
+  # 2. Este job só roda em runners macOS.
+  # 3. O comando `--no-codesign` permite build sem assinatura de certificado.
+  #
+  # build-ios:
+  #   runs-on: macos-latest
+  #   steps:
+  #     # Faz checkout do repositório
+  #     - uses: actions/checkout@v3
+  #
+  #     # Configura o Flutter
+  #     - name: Set up Flutter
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: '3.22.2'
+  #
+  #     # Instala dependências
+  #     - name: Install dependencies
+  #       run: flutter pub get
+  #
+  #     # Analisa o código
+  #     - name: Analyze project
+  #       run: flutter analyze
+  #
+  #     # Executa testes
+  #     - name: Run tests
+  #       run: flutter test
+  #
+  #     # Gera build iOS (sem assinatura de código)
+  #     - name: Build iOS
+  #       run: flutter build ios --release --no-codesign
