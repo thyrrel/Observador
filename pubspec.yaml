@@ -1,35 +1,28 @@
 name: observador
-description: Observador - Monitoramento e controle de redes Wi-Fi
-publish_to: 'none'
+description: App de monitoramento de rede
+publish_to: "none"
+
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.2.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  provider: ^6.0.5
-  sqflite: ^2.2.8+4
-  path: ^1.8.4
-  path_provider: ^2.0.15
-  flutter_local_notifications: ^14.0.1
-  local_auth: ^2.2.5
-  http: ^1.1.2
-  json_annotation: ^4.9.0
-  crypto: ^3.0.3
-  flutter_secure_storage: ^9.1.1
-  shared_preferences: ^2.1.1
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  http: ^1.2.2
+  connectivity_plus: ^6.1.0
+  network_info_plus: ^6.1.0
+  flutter_local_notifications: ^17.2.2
+  local_auth: ^2.3.0
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.1
-  build_runner: ^2.4.8
-  json_serializable: ^6.8.0   # 🔹 compatível com Dart 3.4.3
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/icons/
-    - assets/images/
