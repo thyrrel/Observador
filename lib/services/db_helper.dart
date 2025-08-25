@@ -1,16 +1,30 @@
-Future<int> insertTraffic(Map<String, dynamic> row) async {
-  final db = await database;
-  return db.insert('traffic', row);
-}
+static Future<Database> _initDB() async {
+  String path = join(await getDatabasesPath(), 'observador.db');
+  return await openDatabase(
+    path,
+    version: 1,
+    onCreate: (db, version) async {
+      await db.execute('''
+        CREATE TABLE devices(
+          ip TEXT PRIMARY KEY,
+          mac TEXT,
+          name TEXT,
+          type TEXT,
+          manufacturer TEXT,
+          isBlocked INTEGER,
+          priority INTEGER
+        )
+      ''');
 
-Future<List<Map<String, dynamic>>> last24Hours() async {
-  final db = await database;
-  final since = DateTime.now().subtract(const Duration(days: 1)).millisecondsSinceEpoch;
-  return db.query('traffic', where: 'ts > ?', whereArgs: [since]);
-}
-
-Future<List<Map<String, dynamic>>> last7Days() async {
-  final db = await database;
-  final since = DateTime.now().subtract(const Duration(days: 7)).millisecondsSinceEpoch;
-  return db.query('traffic', where: 'ts > ?', whereArgs: [since]);
+      await db.execute('''
+        CREATE TABLE traffic(
+          ip TEXT,
+          mac TEXT,
+          bytesSent INTEGER,
+          bytesReceived INTEGER,
+          timestamp TEXT
+        )
+      ''');
+    },
+  );
 }
