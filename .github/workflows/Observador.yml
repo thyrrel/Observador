@@ -2,26 +2,102 @@ name: Observador
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
 
 jobs:
-  build-android:
+  build_android:
     name: Build Android
     runs-on: ubuntu-latest
 
-    env:
-      PUB_CACHE: ${{ github.workspace }}/.pub-cache
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.13.5' # versão recomendada para Dart 3.5+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-    - name: Enable Flutter
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      - name: Forçar upgrade do Flutter
+        run: flutter upgrade --force
+
+      - name: Atualizar dependências
+        run: flutter pub upgrade --major-versions
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Build App Bundle (.aab)
+        run: flutter build appbundle --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
+
+      # -----------------------------
+      # 🚀 Publicação na Google Play (Comentada)
+      # -----------------------------
+      # - name: Deploy to Google Play
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+      #     packageName: com.thyrrel.observador
+      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
+      #     track: internal
+      #     status: completed
+
+# -----------------------------
+# iOS temporariamente comentado
+# -----------------------------
+# build_ios:
+#   name: Build iOS
+#   runs-on: macos-latest
+#
+#   steps:
+#     - name: Checkout código
+#       uses: actions/checkout@v4
+#
+#     - name: Configurar Flutter
+#       uses: subosito/flutter-action@v2
+#       with:
+#         flutter-version: '3.24.0'
+#
+#     - name: Forçar upgrade do Flutter
+#       run: flutter upgrade --force
+#
+#     - name: Atualizar dependências
+#       run: flutter pub upgrade --major-versions
+#
+#     - name: Instalar dependências
+#       run: flutter pub get
+#
+#     - name: Build iOS (sem assinatura)
+#       run: flutter build ios --release --no-codesign
+#
+#     - name: Upload artefatos iOS
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: ios-build
+#         path: build/ios/iphoneos
+#         retention-days: 7
