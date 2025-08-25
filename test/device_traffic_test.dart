@@ -2,22 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:observador/models/device_traffic.dart';
 
 void main() {
-  group('DeviceTraffic', () {
-    test('toMap/fromMap', () {
-      const ip = '192.168.1.10';
-      final original = DeviceTraffic(
-        ip: ip,
-        name: 'TV',
-        rxBytes: 1024,
-        txBytes: 512,
-        timestamp: DateTime(2024, 6, 1),
-      );
+  test('DeviceTraffic toMap e fromMap', () {
+    final traffic = DeviceTraffic(
+      ip: '192.168.0.10',
+      mac: 'AA:BB:CC:DD:EE:FF',
+      bytesSent: 1024,
+      bytesReceived: 2048,
+      timestamp: DateTime.now(),
+    );
 
-      final map = original.toMap();
-      final restored = DeviceTraffic.fromMap(map);
+    final map = traffic.toMap();
+    final newTraffic = DeviceTraffic.fromMap(map);
 
-      expect(restored.ip, ip);
-      expect(restored.rxBytes, 1024);
-    });
+    expect(newTraffic.ip, traffic.ip);
+    expect(newTraffic.mac, traffic.mac);
+    expect(newTraffic.bytesSent, traffic.bytesSent);
+    expect(newTraffic.bytesReceived, traffic.bytesReceived);
   });
 }
