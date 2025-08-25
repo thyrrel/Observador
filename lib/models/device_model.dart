@@ -1,17 +1,15 @@
 class DeviceModel {
-  String ip;
-  String mac;
-  String manufacturer;
-  String type;
+  String macAddress;
   String name;
+  String type;
   bool isBlocked;
+  int priority; // Para QoS
 
   DeviceModel({
-    required this.ip,
-    required this.mac,
-    required this.manufacturer,
-    required this.type,
+    required this.macAddress,
     required this.name,
+    required this.type,
     this.isBlocked = false,
+    this.priority = 0,
   });
 }
