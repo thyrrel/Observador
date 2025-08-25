@@ -48,7 +48,8 @@ class NetworkService {
       "00:1A:2B": "TP-Link",
       "3C:5A:B4": "Xiaomi",
       "00:26:BB": "ASUS",
-      // Adicione mais fabricantes
+      "FC:FB:FB": "Apple",
+      "AC:DE:48": "Samsung",
     };
     if (mac.length < 8) return "Desconhecido";
     String prefix = mac.substring(0, 8).toUpperCase();
@@ -56,13 +57,11 @@ class NetworkService {
   }
 
   String classifyDevice(String mac, String manufacturer, String ip) {
-    // Heurísticas simples por fabricante ou faixa MAC
     if (manufacturer.contains("Apple")) return "Smartphone/Tablet";
     if (manufacturer.contains("Samsung")) return "Smartphone/Tablet";
     if (manufacturer.contains("Xiaomi") || manufacturer.contains("TP-Link")) return "IoT";
     if (manufacturer.contains("ASUS") || manufacturer.contains("Intel")) return "PC/Laptop";
 
-    // Pode usar o último octeto do IP para inferir dispositivos conectados
     int lastOctet = int.tryParse(ip.split('.').last) ?? 0;
     if (lastOctet > 200) return "IoT";
 
