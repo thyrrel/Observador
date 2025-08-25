@@ -7,69 +7,49 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # ========================================================
-  # JOB: Build Android
-  # ========================================================
   build-android:
     runs-on: ubuntu-latest
     steps:
-      # Faz checkout do repositório
       - uses: actions/checkout@v3
 
-      # Configura o Flutter (ajuste a versão se necessário)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.2'
 
-      # Instala dependências
       - name: Install dependencies
         run: flutter pub get
 
-      # Analisa o código
       - name: Analyze project
         run: flutter analyze
 
-      # Executa testes
       - name: Run tests
         run: flutter test
 
-      # Gera o APK de release
       - name: Build APK
         run: flutter build apk --release
 
   # ========================================================
-  # JOB: Build iOS (desativado por enquanto)
+  # build-ios (comentado por enquanto)
   # ========================================================
-  # Para ativar o build iOS:
-  # 1. Remova os "#" abaixo.
-  # 2. Este job só roda em runners macOS.
-  # 3. O comando `--no-codesign` permite build sem assinatura de certificado.
-  #
   # build-ios:
   #   runs-on: macos-latest
   #   steps:
-  #     # Faz checkout do repositório
   #     - uses: actions/checkout@v3
   #
-  #     # Configura o Flutter
   #     - name: Set up Flutter
   #       uses: subosito/flutter-action@v2
   #       with:
   #         flutter-version: '3.22.2'
   #
-  #     # Instala dependências
   #     - name: Install dependencies
   #       run: flutter pub get
   #
-  #     # Analisa o código
   #     - name: Analyze project
   #       run: flutter analyze
   #
-  #     # Executa testes
   #     - name: Run tests
   #       run: flutter test
   #
-  #     # Gera build iOS (sem assinatura de código)
   #     - name: Build iOS
   #       run: flutter build ios --release --no-codesign
