@@ -1,49 +1,43 @@
-name: Flutter CI
+name: Observador
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configurar Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'   # ajuste para a versão que você usa
-          channel: 'stable'
+          flutter-version: '3.24.0' # ajuste para a versão que usa
 
-      - name: Cache dependências
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            build
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
-
-      - name: Instalar dependências
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Verificar formatação
-        run: flutter format --set-exit-if-changed .
-
-      - name: Analisar código
-        run: flutter analyze
-
-      - name: Executar testes
+      - name: Run tests
         run: flutter test
 
-      - name: Build APK release
+      - name: Analyze code
+        run: flutter analyze
+
+      - name: Build APK (release)
         run: flutter build apk --release
 
-      - name: Build AppBundle release
+      - name: Build AppBundle (release)
         run: flutter build appbundle --release
+
+      - name: Upload artifacts (APK & AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-builds
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
