@@ -1,62 +1,44 @@
-name: Observador
+name: observador
+description: Aplicativo de monitoramento e segurança de redes - Observador
+publish_to: 'none' # Mantém privado
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
+version: 1.0.0+1
 
-jobs:
-  build_android:
-    name: Build Android
-    runs-on: ubuntu-latest
+environment:
+  sdk: ">=3.4.0 <4.0.0"
 
-    steps:
-      # 1. Clonar repositório
-      - name: Checkout código
-        uses: actions/checkout@v4
+dependencies:
+  flutter:
+    sdk: flutter
 
-      # 2. Configurar Java 17
-      - name: Configurar Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+  # Gerenciamento de estado
+  provider: ^6.0.5
 
-      # 3. Configurar Flutter 3.24
-      - name: Configurar Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
+  # Notificações locais
+  flutter_local_notifications: ^17.2.1
 
-      # 4. Garantir que o Gradle Wrapper está presente e executável
-      - name: Tornar gradlew executável
-        run: chmod +x android/gradlew
+  # Autenticação biométrica
+  local_auth: ^2.3.0
 
-      # 5. Instalar dependências Flutter
-      - name: Instalar dependências
-        run: flutter pub get
+  # Armazenamento seguro
+  flutter_secure_storage: ^9.2.2
 
-      # 6. Build APK Release
-      - name: Build APK
-        run: flutter build apk --release
+  # Background tasks
+  background_fetch: ^1.2.4
 
-      # 7. Build App Bundle (.aab)
-      - name: Build App Bundle
-        run: flutter build appbundle --release
+  # HTTP para requisições de rede e DNS
+  http: ^1.2.2
 
-      # 8. Upload APK
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
+  # Criptografia local
+  encrypt: ^5.0.3
 
-      # 9. Upload AAB
-      - name: Upload AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 7
+  # Gráficos para dashboard
+  fl_chart: ^0.71.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
