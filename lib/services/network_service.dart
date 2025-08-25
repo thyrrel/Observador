@@ -1,30 +1,31 @@
-import '../models/device_model.dart';
+import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 
 class NetworkService {
-  final List<DeviceModel> _devices = [];
+  final Connectivity _connectivity = Connectivity();
+  final NetworkInfo _networkInfo = NetworkInfo();
 
-  List<DeviceModel> get devices => _devices;
+  Future<Map<String, dynamic>> getNetworkStatus() async {
+    final connectivityResult = await _connectivity.checkConnectivity();
+    final wifiName = await _networkInfo.getWifiName();
+    final wifiIP = await _networkInfo.getWifiIP();
+    final wifiGateway = await _networkInfo.getWifiGatewayIP();
 
-  void addDevice(DeviceModel device) {
-    _devices.add(device);
+    return {
+      'status': connectivityResult.toString(),
+      'wifiName': wifiName ?? 'Desconhecido',
+      'ip': wifiIP ?? 'Desconhecido',
+      'gateway': wifiGateway ?? 'Desconhecido',
+    };
   }
 
-  void removeDevice(String mac) {
-    _devices.removeWhere((d) => d.mac == mac);
-  }
-
-  void blockIP(String ip) {
-    // Aqui a lógica real de bloqueio do IP
-    print('Bloqueando IP: $ip');
-  }
-
-  void limitIP(String ip) {
-    // Aqui a lógica real de limitação de banda
-    print('Limitando IP: $ip');
-  }
-
-  void setHighPriority(String ip) {
-    // Aqui a lógica real de prioridade de rede
-    print('Prioridade alta para IP: $ip');
+  Future<bool> pingHost(String host) async {
+    try {
+      final result = await InternetAddress.lookup(host);
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 }
