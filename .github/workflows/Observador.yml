@@ -2,9 +2,9 @@ name: Observador
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
 
 jobs:
   build_android:
@@ -12,49 +12,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout do repositório
       - name: Checkout código
         uses: actions/checkout@v4
 
-      # 2. Cache do Flutter SDK
-      - name: Cache Flutter
-        uses: actions/cache@v3
-        with:
-          path: ~/.pub-cache
-          key: flutter-cache-${{ runner.os }}-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            flutter-cache-${{ runner.os }}-
-
-      # 3. Configurar Java
       - name: Configurar Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 4. Configurar Flutter
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
 
-      # 5. Atualizar dependências
       - name: Atualizar dependências
         run: flutter pub upgrade --major-versions
 
-      # 6. Instalar dependências
       - name: Instalar dependências
         run: flutter pub get
 
-      # 7. Build APK release
-      - name: Build APK release
+      - name: Build APK
         run: flutter build apk --release
 
-      # 8. Build App Bundle (.aab) - comentado
-      # - name: Build App Bundle
+      # -----------------------------
+      # 🚀 Build App Bundle (.aab) - Mantido comentado
+      # -----------------------------
+      # - name: Build App Bundle (.aab)
       #   run: flutter build appbundle --release
 
-      # 9. Upload APK
+      # -----------------------------
+      # 🚀 Upload APK
+      # -----------------------------
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -62,7 +51,9 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
 
-      # 10. Upload AAB - comentado
+      # -----------------------------
+      # 🚀 Upload AAB - Mantido comentado
+      # -----------------------------
       # - name: Upload AAB
       #   uses: actions/upload-artifact@v4
       #   with:
@@ -71,7 +62,7 @@ jobs:
       #     retention-days: 7
 
       # -----------------------------
-      # 🚀 Publicação na Google Play (Comentada)
+      # 🚀 Publicação na Google Play - Mantido comentado
       # -----------------------------
       # - name: Deploy to Google Play
       #   uses: r0adkll/upload-google-play@v1
