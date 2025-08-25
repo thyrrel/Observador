@@ -1,6 +1,6 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'screens/dashboard_screen.dart';
 
 void main() {
   runApp(const ObservadorApp());
@@ -13,11 +13,14 @@ class ObservadorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Observador',
-      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
       ),
       home: const HomeScreen(),
+      routes: {
+        '/dashboard': (context) => const DashboardScreen(),
+      },
     );
   }
 }
