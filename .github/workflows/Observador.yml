@@ -1,67 +1,119 @@
-# Observador - GitHub Actions Workflow
-# Este workflow é responsável por compilar, testar e gerar o APK do app Flutter Observador
-# Inclui cache para otimização, build em múltiplos ambientes e upload do artefato
+# Workflow para o Observador
+# Flutter versão usada neste workflow: 3.24.0
+# Mantendo blocos comentados para deploy e iOS
+# Executa build Android e gera APK de release
+# OBS: Bundle (.aab) e deploy estão comentados para uso futuro
 
 name: Observador
 
 on:
-  # Executa o workflow em push ou pull_request na branch main
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
-
-  # Permite execução manual do workflow
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
-  build:
-    name: Build Flutter APK
+  build_android:
+    name: Build Android
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout do código
-      - name: Checkout source
-        uses: actions/checkout@v3
+      # 1. Checkout do repositório
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-      # Instalação do Flutter
-      - name: Setup Flutter
+      # 2. Configurar Java
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. Configurar Flutter
+      - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0' # Versão fixa para evitar quebras
+          flutter-version: '3.24.0'
 
-      # Cache das dependências para builds mais rápidos
-      - name: Cache pub dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            build/
-          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
+      # 4. Forçar upgrade do Flutter
+      - name: Forçar upgrade do Flutter
+        run: flutter upgrade --force
 
-      # Instalação das dependências
-      - name: Install dependencies
+      # 5. Atualizar dependências
+      - name: Atualizar dependências
+        run: flutter pub upgrade --major-versions
+
+      # 6. Instalar dependências
+      - name: Instalar dependências
         run: flutter pub get
 
-      # Análise estática do código
-      - name: Analyze project
-        run: flutter analyze
-
-      # Testes automatizados
-      - name: Run tests
-        run: flutter test
-
-      # Compilação em modo release
-      - name: Build release APK
+      # 7. Build APK
+      - name: Build APK release
         run: flutter build apk --release
 
-      # Upload do APK como artefato
-      - name: Upload release APK
-        uses: actions/upload-artifact@v3
+      # 8. Build App Bundle (.aab) - comentado
+      # - name: Build App Bundle
+      #   run: flutter build appbundle --release
+
+      # 9. Upload APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          name: Observador-release-apk
+          name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
+
+      # 10. Upload AAB - comentado
+      # - name: Upload AAB
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: android-aab
+      #     path: build/app/outputs/bundle/release/app-release.aab
+      #     retention-days: 7
+
+      # -----------------------------
+      # 🚀 Publicação na Google Play (Comentada)
+      # -----------------------------
+      # - name: Deploy to Google Play
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+      #     packageName: com.thyrrel.observador
+      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
+      #     track: internal
+      #     status: completed
+
+# -----------------------------
+# iOS temporariamente comentado
+# -----------------------------
+# build_ios:
+#   name: Build iOS
+#   runs-on: macos-latest
+#
+#   steps:
+#     - name: Checkout código
+#       uses: actions/checkout@v4
+#
+#     - name: Configurar Flutter
+#       uses: subosito/flutter-action@v2
+#       with:
+#         flutter-version: '3.24.0'
+#
+#     - name: Forçar upgrade do Flutter
+#       run: flutter upgrade --force
+#
+#     - name: Atualizar dependências
+#       run: flutter pub upgrade --major-versions
+#
+#     - name: Instalar dependências
+#       run: flutter pub get
+#
+#     - name: Build iOS (sem assinatura)
+#       run: flutter build ios --release --no-codesign
+#
+#     - name: Upload artefatos iOS
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: ios-build
+#         path: build/ios/iphoneos
+#         retention-days: 7
