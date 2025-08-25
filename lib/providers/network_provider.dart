@@ -1,29 +1,30 @@
-import 'package:flutter/material.dart';
-import '../services/network_service.dart';
 import '../models/device_model.dart';
 
-class NetworkProvider with ChangeNotifier {
-  final NetworkService _networkService = NetworkService();
+class NetworkService {
+  final List<DeviceModel> _devices = [];
 
-  List<DeviceModel> get devices => _networkService.getDevices();
+  List<DeviceModel> get devices => _devices;
 
   void addDevice(DeviceModel device) {
-    _networkService.addDevice(device);
-    notifyListeners();
+    _devices.add(device);
+  }
+
+  void removeDevice(String mac) {
+    _devices.removeWhere((d) => d.mac == mac);
   }
 
   void blockIP(String ip) {
-    _networkService.blockIP(ip);
-    notifyListeners();
+    // Aqui a lógica real de bloqueio do IP
+    print('Bloqueando IP: $ip');
+  }
+
+  void limitIP(String ip) {
+    // Aqui a lógica real de limitação de banda
+    print('Limitando IP: $ip');
   }
 
   void setHighPriority(String ip) {
-    _networkService.setHighPriority(ip);
-    notifyListeners();
-  }
-
-  void limitIP(String ip, int limit) {
-    _networkService.limitIP(ip, limit);
-    notifyListeners();
+    // Aqui a lógica real de prioridade de rede
+    print('Prioridade alta para IP: $ip');
   }
 }
