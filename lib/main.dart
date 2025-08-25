@@ -12,15 +12,19 @@ class ObservadorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => NetworkProvider()),
-      ],
+    return ChangeNotifierProvider(
+      create: (_) => NetworkProvider(),
       child: MaterialApp(
         title: 'Observador',
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark(),
-        themeMode: ThemeMode.system,
+        theme: ThemeData(
+          brightness: Brightness.light,
+          primarySwatch: Colors.blue,
+        ),
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          primarySwatch: Colors.blueGrey,
+        ),
+        themeMode: ThemeMode.system, // Pode ser alterado no SettingsScreen
         home: const HomeScreen(),
       ),
     );
