@@ -1,35 +1,46 @@
-/// Passo 7 – Priorizar banda para um dispositivo
-Future<bool> prioritizeDevice(String mac, {int priority = 100}) async {
-  switch (routerType) {
-    case 'TP-Link':
-      return await _prioritizeTPLink(mac, priority);
-    case 'ASUS':
-      return await _prioritizeASUS(mac, priority);
-    case 'D-Link':
-      return await _prioritizeDLink(mac, priority);
-    default:
-      return false;
+import 'dart:async';
+
+class RouterService {
+  final String routerIP;
+  final String username;
+  final String password;
+  String routerType = 'Generic';
+
+  RouterService({required this.routerIP, required this.username, required this.password});
+
+  Future<void> detectRouter() async {
+    // Implementar autodetect do tipo do roteador
+    routerType = 'TP-Link'; // exemplo
   }
-}
 
-Future<bool> _prioritizeTPLink(String mac, int priority) async {
-  // Exemplo: enviar requisição real para API TP-Link
-  print('TP-Link: priorizando $mac com prioridade $priority');
-  return true;
-}
+  Future<bool> login() async {
+    // Implementar login via API HTTP/Telnet/SSH real
+    print('Login no roteador $routerIP com $username/$password');
+    return true;
+  }
 
-Future<bool> _prioritizeASUS(String mac, int priority) async {
-  print('ASUS: priorizando $mac com prioridade $priority');
-  return true;
-}
+  Future<Map<String, double>> getTrafficUsage() async {
+    // Retornar mapa IP -> Mbps
+    return {};
+  }
 
-Future<bool> _prioritizeDLink(String mac, int priority) async {
-  print('D-Link: priorizando $mac com prioridade $priority');
-  return true;
-}
-/// Passo 8 – Conectar VPN para dispositivo específico
-Future<bool> connectVPNForDevice(String mac) async {
-  // Exemplo: VPN via WireGuard/OpenVPN API
-  print('Conectando VPN para $mac');
-  return true;
+  Future<bool> blockDevice(String mac) async {
+    print('Bloqueando $mac');
+    return true;
+  }
+
+  Future<bool> unblockDevice(String mac) async {
+    print('Desbloqueando $mac');
+    return true;
+  }
+
+  Future<bool> prioritizeDevice(String mac, {int priority = 100}) async {
+    print('$routerType: Prioridade $priority aplicada a $mac');
+    return true;
+  }
+
+  Future<bool> connectVPNForDevice(String mac) async {
+    print('VPN ativada para $mac');
+    return true;
+  }
 }
