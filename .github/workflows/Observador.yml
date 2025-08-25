@@ -1,59 +1,67 @@
+# Observador - GitHub Actions Workflow
+# Este workflow é responsável por compilar, testar e gerar o APK do app Flutter Observador
+# Inclui cache para otimização, build em múltiplos ambientes e upload do artefato
+
 name: Observador
 
 on:
+  # Executa o workflow em push ou pull_request na branch main
   push:
     branches:
       - main
   pull_request:
+    branches:
+      - main
+
+  # Permite execução manual do workflow
+  workflow_dispatch:
 
 jobs:
-  build_android:
-    name: Build Android
+  build:
+    name: Build Flutter APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      # Checkout do código
+      - name: Checkout source
+        uses: actions/checkout@v3
 
-      - name: Configurar Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Configurar Flutter
+      # Instalação do Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.22.0' # Versão fixa para evitar quebras
 
-      - name: Forçar upgrade do Flutter
-        run: flutter upgrade --force
+      # Cache das dependências para builds mais rápidos
+      - name: Cache pub dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            build/
+          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
 
-      - name: Limpar build antigo
-        run: flutter clean
-
-      - name: Atualizar dependências
-        run: flutter pub upgrade --major-versions
-
-      - name: Instalar dependências
+      # Instalação das dependências
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK Release
+      # Análise estática do código
+      - name: Analyze project
+        run: flutter analyze
+
+      # Testes automatizados
+      - name: Run tests
+        run: flutter test
+
+      # Compilação em modo release
+      - name: Build release APK
         run: flutter build apk --release
 
-      - name: Build App Bundle (.aab)
-        run: flutter build appbundle --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      # Upload do APK como artefato
+      - name: Upload release APK
+        uses: actions/upload-artifact@v3
         with:
-          name: android-apk
+          name: Observador-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
-
-      - name: Upload AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 7
