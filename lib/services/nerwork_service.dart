@@ -5,12 +5,10 @@ import 'package:network_info_plus/network_info_plus.dart';
 class NetworkService {
   final NetworkInfo _networkInfo = NetworkInfo();
 
-  // Descobre IP do gateway
   Future<String?> getGatewayIP() async {
     return await _networkInfo.getWifiGatewayIP();
   }
 
-  // Escaneia a sub-rede para descobrir dispositivos ativos
   Future<List<DeviceModel>> scanNetwork(String subnetPrefix) async {
     List<DeviceModel> devices = [];
     for (int i = 1; i <= 254; i++) {
@@ -20,13 +18,19 @@ class NetworkService {
         socket.destroy();
         String mac = await getMacFromIP(ip);
         String manufacturer = lookupManufacturer(mac);
-        devices.add(DeviceModel(name: manufacturer, ip: ip, mac: mac, manufacturer: manufacturer));
+        String type = classifyDevice(mac, manufacturer, ip);
+        devices.add(DeviceModel(
+          name: manufacturer,
+          ip: ip,
+          mac: mac,
+          manufacturer: manufacturer,
+          type: type,
+        ));
       } catch (_) {}
     }
     return devices;
   }
 
-  // Obtém MAC address via tabela ARP (necessita permissões e root em alguns casos)
   Future<String> getMacFromIP(String ip) async {
     try {
       final result = await Process.run('arp', ['-n', ip]);
@@ -39,16 +43,29 @@ class NetworkService {
     return '';
   }
 
-  // Identifica fabricante pelo prefixo MAC (OUI)
   String lookupManufacturer(String mac) {
     Map<String, String> ouiDatabase = {
       "00:1A:2B": "TP-Link",
       "3C:5A:B4": "Xiaomi",
       "00:26:BB": "ASUS",
-      // Adicione outros fabricantes
+      // Adicione mais fabricantes
     };
     if (mac.length < 8) return "Desconhecido";
     String prefix = mac.substring(0, 8).toUpperCase();
     return ouiDatabase[prefix] ?? "Desconhecido";
+  }
+
+  String classifyDevice(String mac, String manufacturer, String ip) {
+    // Heurísticas simples por fabricante ou faixa MAC
+    if (manufacturer.contains("Apple")) return "Smartphone/Tablet";
+    if (manufacturer.contains("Samsung")) return "Smartphone/Tablet";
+    if (manufacturer.contains("Xiaomi") || manufacturer.contains("TP-Link")) return "IoT";
+    if (manufacturer.contains("ASUS") || manufacturer.contains("Intel")) return "PC/Laptop";
+
+    // Pode usar o último octeto do IP para inferir dispositivos conectados
+    int lastOctet = int.tryParse(ip.split('.').last) ?? 0;
+    if (lastOctet > 200) return "IoT";
+
+    return "Desconhecido";
   }
 }
