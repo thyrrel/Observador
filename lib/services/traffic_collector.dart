@@ -1,16 +1,20 @@
-import 'package:observador/models/device_traffic.dart';
-import 'package:observador/services/db_helper.dart';
+import 'db_helper.dart';
+import '../models/device_model.dart';
 
 class TrafficCollector {
-  Future<void> saveTraffic(DeviceTraffic traffic) async {
-    final db = await DBHelper.database;
-    await db.insert('traffic', traffic.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<List<DeviceTraffic>> getTrafficLogs() async {
-    final db = await DBHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('traffic');
-    return List.generate(maps.length, (i) => DeviceTraffic.fromMap(maps[i]));
+  Future<void> collectOnce(DeviceModel device) async {
+    final db = await DBHelper.getDatabase();
+    // Exemplo: inserir dispositivo no DB
+    await db.insert(
+      'devices',
+      {
+        'ip': device.ip,
+        'mac': device.mac,
+        'name': device.name,
+        'type': device.type,
+        'manufacturer': device.manufacturer
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 }
