@@ -3,7 +3,7 @@ class DeviceModel {
   String ip;
   String mac;
   String manufacturer;
-  String type; // Smartphone, PC, IoT, etc.
+  String type; // Smartphone, PC, IoT, Tablet, etc.
   bool isBlocked;
 
   DeviceModel({
