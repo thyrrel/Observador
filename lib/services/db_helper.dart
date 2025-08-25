@@ -1,30 +1,32 @@
-static Future<Database> _initDB() async {
-  String path = join(await getDatabasesPath(), 'observador.db');
-  return await openDatabase(
-    path,
-    version: 1,
-    onCreate: (db, version) async {
-      await db.execute('''
-        CREATE TABLE devices(
-          ip TEXT PRIMARY KEY,
-          mac TEXT,
-          name TEXT,
-          type TEXT,
-          manufacturer TEXT,
-          isBlocked INTEGER,
-          priority INTEGER
-        )
-      ''');
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
-      await db.execute('''
-        CREATE TABLE traffic(
-          ip TEXT,
-          mac TEXT,
-          bytesSent INTEGER,
-          bytesReceived INTEGER,
-          timestamp TEXT
-        )
-      ''');
-    },
-  );
+class DBHelper {
+  static Database? _db;
+
+  static Future<Database> getDatabase() async {
+    if (_db != null) return _db!;
+    _db = await _initDB();
+    return _db!;
+  }
+
+  static Future<Database> _initDB() async {
+    String path = join(await getDatabasesPath(), 'observador.db');
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE devices(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT,
+            mac TEXT,
+            name TEXT,
+            type TEXT,
+            manufacturer TEXT
+          )
+        ''');
+      },
+    );
+  }
 }
