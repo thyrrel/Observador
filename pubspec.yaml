@@ -1,35 +1,35 @@
 name: observador
-description: Observador - app com Super Poderes.
-publish_to: 'none'
-
+description: Observador - Monitoramento e controle de redes Wi-Fi
+publish_to: 'none' # pacote não será publicado
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: ">=3.2.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-
   provider: ^6.0.5
-  flutter_local_notifications: ^17.2.1
-  local_auth: ^2.3.0
-  flutter_secure_storage: ^9.2.2
-  background_fetch: ^1.2.4
-  http: ^1.2.2
-  encrypt: ^5.0.3
-  fl_chart: ^0.71.0
-  shared_preferences: ^2.1.2
-  pdf: ^3.10.1
-  share_plus: ^8.0.0
-  workmanager: ^0.5.0
+  sqflite: ^2.2.8+4
+  path: ^1.8.4
+  path_provider: ^2.0.15
+  flutter_local_notifications: ^14.0.1
+  local_auth: ^2.2.5
+  http: ^1.1.2
+  json_annotation: ^6.6.2
+  crypto: ^3.2.3
+  flutter_secure_storage: ^9.1.1
+  shared_preferences: ^2.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^2.0.1
+  build_runner: ^2.4.8
+  json_serializable: ^6.8.2
 
 flutter:
   uses-material-design: true
   assets:
+    - assets/icons/
     - assets/images/
