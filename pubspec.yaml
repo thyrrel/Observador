@@ -1,6 +1,6 @@
 name: observador
 description: Aplicativo de monitoramento e segurança de redes - Observador
-publish_to: 'none' # Mantém privado
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -11,29 +11,14 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Gerenciamento de estado
   provider: ^6.0.5
-
-  # Notificações locais
   flutter_local_notifications: ^17.2.1
-
-  # Autenticação biométrica
   local_auth: ^2.3.0
-
-  # Armazenamento seguro
   flutter_secure_storage: ^9.2.2
-
-  # Background tasks
   background_fetch: ^1.2.4
-
-  # HTTP para requisições de rede e DNS
   http: ^1.2.2
-
-  # Criptografia local
   encrypt: ^5.0.3
-
-  # Gráficos para dashboard
-  fl_chart: ^0.71.1
+  fl_chart: ^0.71.0
 
 dev_dependencies:
   flutter_test:
