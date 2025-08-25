@@ -1,44 +1,40 @@
-name: observador
-description: Aplicativo de monitoramento e segurança de redes - Observador
-publish_to: 'none' # Mantém privado
+name: Observador
 
-version: 1.0.0+1
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-environment:
-  sdk: ">=3.4.0 <4.0.0"
+jobs:
+  build_android:
+    runs-on: ubuntu-latest
 
-dependencies:
-  flutter:
-    sdk: flutter
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-  # Gerenciamento de estado
-  provider: ^6.0.5
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
 
-  # Notificações locais
-  flutter_local_notifications: ^17.2.1
+      - name: Install dependencies
+        run: flutter pub get
 
-  # Autenticação biométrica
-  local_auth: ^2.3.0
+      - name: Run analyze
+        run: flutter analyze
 
-  # Armazenamento seguro
-  flutter_secure_storage: ^9.2.2
+      - name: Run tests
+        run: flutter test
 
-  # Background tasks
-  background_fetch: ^1.2.4
+      - name: Build APK release
+        run: flutter build apk --release
 
-  # HTTP para requisições de rede e DNS
-  http: ^1.2.2
-
-  # Criptografia local
-  encrypt: ^5.0.3
-
-  # Gráficos para dashboard
-  fl_chart: ^0.71.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-
-flutter:
-  uses-material-design: true
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: Observador-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
