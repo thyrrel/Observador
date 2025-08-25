@@ -1,23 +1,42 @@
-void analyzeTraffic(List<DeviceModel> devices, Map<String, double> usageMbps) {
-  for (var d in devices) {
-    double mbps = usageMbps[d.ip] ?? 0;
+import '../models/device_model.dart';
+import 'router_service.dart';
 
-    if (mbps > 20 && d.type.contains("TV")) {
-      _notifyVoice('A TV ${d.name} está consumindo $mbps Mbps. Deseja priorizar seu jogo?');
-      // Sugestão automática: priorizar outro dispositivo (ex: console de jogo)
-      _suggestQoS(d);
+typedef VoiceCallback = void Function(String msg);
+
+class IAService {
+  final VoiceCallback voiceCallback;
+  final RouterService routerService;
+  List<DeviceModel> devices = [];
+
+  IAService({required this.voiceCallback, required this.routerService});
+
+  void analyzeDevices(List<DeviceModel> devs) {
+    devices = devs;
+    for (var d in devices) {
+      if (d.type.contains('Desconhecido')) {
+        voiceCallback('Dispositivo suspeito detectado: ${d.name}');
+      }
     }
   }
-}
 
-void _suggestQoS(DeviceModel tv) {
-  // Simulação de sugestão para outro dispositivo
-  DeviceModel? gameDevice = devices.firstWhere(
-      (d) => d.type.contains("Console") || d.type.contains("PC"),
-      orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: ''));
-  if (gameDevice.ip != '') {
-    _notifyVoice('Sugerindo priorizar ${gameDevice.name} para melhor performance.');
-    // Integrar RouterService para aplicar QoS
-    routerService.prioritizeDevice(gameDevice.mac, priority: 200);
+  void analyzeTraffic(List<DeviceModel> devs, Map<String, double> usage) {
+    for (var d in devs) {
+      double mbps = usage[d.ip] ?? 0;
+      if (mbps > 20 && d.type.contains('TV')) {
+        voiceCallback('A TV ${d.name} está consumindo $mbps Mbps. Deseja priorizar o jogo?');
+        _suggestQoS(d);
+      }
+    }
+  }
+
+  void _suggestQoS(DeviceModel tv) {
+    DeviceModel? gameDevice = devices.firstWhere(
+        (d) => d.type.contains('Console') || d.type.contains('PC'),
+        orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: ''));
+
+    if (gameDevice.ip != '') {
+      voiceCallback('Sugerindo priorizar ${gameDevice.name}');
+      routerService.prioritizeDevice(gameDevice.mac, priority: 200);
+    }
   }
 }
