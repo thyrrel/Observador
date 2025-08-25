@@ -1,15 +1,13 @@
 class DeviceModel {
-  String macAddress;
-  String name;
-  String type;
-  bool isBlocked;
-  int priority; // Para QoS
+  final String ip;
+  final String mac;
+  final String manufacturer;
+  bool blocked;
 
   DeviceModel({
-    required this.macAddress,
-    required this.name,
-    required this.type,
-    this.isBlocked = false,
-    this.priority = 0,
+    required this.ip,
+    required this.mac,
+    required this.manufacturer,
+    this.blocked = false,
   });
 }
