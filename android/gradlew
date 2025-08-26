@@ -3,9 +3,6 @@
 # Gradle start up script for UN*X
 #
 
-##############################################################################
-# Locate the Java Development Kit (JDK)
-##############################################################################
 if [ -n "$JAVA_HOME" ] ; then
   JAVA_HOME="$JAVA_HOME"
 elif type -p java >/dev/null 2>&1 ; then
@@ -15,5 +12,9 @@ else
   exit 1
 fi
 
-##############################################################################
-# Determine the Gradle home directory
+DIRNAME=$(dirname "$0")
+GRADLE_HOME="$DIRNAME/gradle/wrapper"
+
+CLASSPATH="$GRADLE_HOME/gradle-wrapper.jar"
+
+exec "$JAVA_HOME/bin/java" -cp "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
