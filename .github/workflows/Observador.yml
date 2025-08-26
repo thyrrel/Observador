@@ -24,7 +24,10 @@ jobs:
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.28.1' # atualizado para Dart >=3.8
+          flutter-version: '3.24.0' # versão estável compatível com Actions
+
+      - name: Tornar gradlew executável
+        run: chmod +x android/gradlew
 
       - name: Atualizar dependências
         run: flutter pub upgrade --major-versions
@@ -72,35 +75,3 @@ jobs:
       #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
       #     track: internal
       #     status: completed
-
-# -----------------------------
-# iOS temporariamente comentado
-# -----------------------------
-# build_ios:
-#   name: Build iOS
-#   runs-on: macos-latest
-#
-#   steps:
-#     - name: Checkout código
-#       uses: actions/checkout@v4
-#
-#     - name: Configurar Flutter
-#       uses: subosito/flutter-action@v2
-#       with:
-#         flutter-version: '3.28.1'
-#
-#     - name: Atualizar dependências
-#       run: flutter pub upgrade --major-versions
-#
-#     - name: Instalar dependências
-#       run: flutter pub get
-#
-#     - name: Build iOS (sem assinatura)
-#       run: flutter build ios --release --no-codesign
-#
-#     - name: Upload artefatos iOS
-#       uses: actions/upload-artifact@v4
-#       with:
-#         name: ios-build
-#         path: build/ios/iphoneos
-#         retention-days: 7
