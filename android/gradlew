@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# Gradle start up script for UN*X
+#
+
+##############################################################################
+# Locate the Java Development Kit (JDK)
+##############################################################################
+if [ -n "$JAVA_HOME" ] ; then
+  JAVA_HOME="$JAVA_HOME"
+elif type -p java >/dev/null 2>&1 ; then
+  JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+else
+  echo "ERROR: JAVA_HOME is not set and java not found in PATH."
+  exit 1
+fi
+
+##############################################################################
+# Determine the Gradle home directory
