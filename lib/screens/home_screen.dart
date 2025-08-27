@@ -11,28 +11,21 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Observador')),
-      body: Center(
-        child: provider.loading
-            ? const CircularProgressIndicator()
-            : provider.networkData.isEmpty
-                ? ElevatedButton(
-                    onPressed: () => provider.loadNetworkData(),
-                    child: const Text('Carregar Rede'),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Text('Status: ${provider.networkData['status']}'),
-                      Text('Wi-Fi: ${provider.networkData['wifiName']}'),
-                      Text('IP: ${provider.networkData['ip']}'),
-                      Text('Gateway: ${provider.networkData['gateway']}'),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () => provider.loadNetworkData(),
-                        child: const Text('Atualizar'),
-                      ),
-                    ],
-                  ),
+      body: provider.loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: provider.networkData.length,
+              itemBuilder: (context, index) {
+                final key = provider.networkData.keys.elementAt(index);
+                return ListTile(
+                  title: Text(key),
+                  subtitle: Text(provider.networkData[key].toString()),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => provider.loadNetworkData(),
+        child: const Icon(Icons.refresh),
       ),
     );
   }
