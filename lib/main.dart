@@ -4,7 +4,14 @@ import 'providers/network_provider.dart';
 import 'screens/home_screen.dart';
 
 void main() {
-  runApp(const ObservadorApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NetworkProvider()),
+      ],
+      child: const ObservadorApp(),
+    ),
+  );
 }
 
 class ObservadorApp extends StatelessWidget {
@@ -12,16 +19,11 @@ class ObservadorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => NetworkProvider(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Observador',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: const HomeScreen(),
-      ),
+    return MaterialApp(
+      title: 'Observador',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(useMaterial3: true),
+      home: const HomeScreen(),
     );
   }
 }
