@@ -1,9 +1,8 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:http/http.dart' as http;
 
 class NetworkDevice {
   final String ip;
@@ -18,35 +17,29 @@ class NetworkDevice {
     this.blocked = false,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'ip': ip,
-      'mac': mac,
-      'name': name,
-      'blocked': blocked,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        'ip': ip,
+        'mac': mac,
+        'name': name,
+        'blocked': blocked,
+      };
 
-  factory NetworkDevice.fromMap(Map<String, dynamic> map) {
-    return NetworkDevice(
-      ip: map['ip'],
-      mac: map['mac'] ?? 'unknown',
-      name: map['name'] ?? map['ip'],
-      blocked: map['blocked'] ?? false,
-    );
-  }
+  factory NetworkDevice.fromMap(Map<String, dynamic> map) => NetworkDevice(
+        ip: map['ip'],
+        mac: map['mac'],
+        name: map['name'],
+        blocked: map['blocked'] ?? false,
+      );
 }
 
 class NetworkService with ChangeNotifier {
   final NetworkInfo _networkInfo = NetworkInfo();
   List<NetworkDevice> _devices = [];
-  Timer? _scanTimer;
 
   List<NetworkDevice> get devices => _devices;
 
   NetworkService() {
     _loadDevices();
-    _startAutoScan();
   }
 
   Future<void> _loadDevices() async {
@@ -65,66 +58,22 @@ class NetworkService with ChangeNotifier {
     await prefs.setString('network_devices', encoded);
   }
 
-  void _startAutoScan() {
-    _scanTimer = Timer.periodic(const Duration(seconds: 60), (_) => scanNetwork());
-  }
+  Future<Map<String, dynamic>> getNetworkStatus() async {
+    final wifiName = await _networkInfo.getWifiName();
+    final wifiIP = await _networkInfo.getWifiIP();
+    final gateway = await _networkInfo.getWifiGatewayIP();
 
-  Future<String?> getWifiName() async => await _networkInfo.getWifiName();
-  Future<String?> getWifiIP() async => await _networkInfo.getWifiIP();
-  Future<String?> getGatewayIP() async => await _networkInfo.getWifiGatewayIP();
-
-  Future<void> scanNetwork() async {
-    final localIp = await getWifiIP();
-    if (localIp == null) return;
-
-    final subnet = localIp.substring(0, localIp.lastIndexOf('.'));
-    List<NetworkDevice> scannedDevices = [];
-
-    for (int i = 1; i <= 254; i++) {
-      final ip = '$subnet.$i';
-      try {
-        final result = await InternetAddress(ip).ping(timeout: const Duration(milliseconds: 300));
-        if (result) {
-          final existing = _devices.firstWhere(
-            (d) => d.ip == ip,
-            orElse: () => NetworkDevice(ip: ip, mac: 'unknown', name: ip),
-          );
-          scannedDevices.add(NetworkDevice(
-            ip: ip,
-            mac: existing.mac,
-            name: existing.name,
-            blocked: existing.blocked,
-          ));
-        }
-      } catch (_) {}
-    }
-
-    _devices = scannedDevices;
-    await _saveDevices();
-    notifyListeners();
+    return {
+      'status': 'conectado',
+      'wifiName': wifiName ?? 'Desconhecido',
+      'ip': wifiIP ?? '0.0.0.0',
+      'gateway': gateway ?? '0.0.0.0',
+    };
   }
 
   void toggleBlock(NetworkDevice device) {
     device.blocked = !device.blocked;
     _saveDevices();
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _scanTimer?.cancel();
-    super.dispose();
-  }
-}
-
-extension on InternetAddress {
-  Future<bool> ping({Duration timeout = const Duration(seconds: 1)}) async {
-    try {
-      final socket = await Socket.connect(this, 80, timeout: timeout);
-      socket.destroy();
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 }
