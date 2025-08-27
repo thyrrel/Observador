@@ -14,8 +14,8 @@ dependencies:
   path: ^1.8.3
   flutter_secure_storage: ^9.0.0
   workmanager: ^0.5.1
-  connectivity_plus: ^4.1.0
-  network_info_plus: ^4.1.0   # <-- versão corrigida
+  connectivity_plus: ^6.1.5      # <-- versão corrigida
+  network_info_plus: ^4.1.0
   flutter_local_notifications: ^14.0.0
 
 dev_dependencies:
