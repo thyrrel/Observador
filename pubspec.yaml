@@ -1,6 +1,6 @@
 name: observador
 description: Aplicativo de monitoramento e segurança de redes Wi-Fi e dispositivos.
-publish_to: "none" # não publicar automaticamente
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -10,47 +10,24 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Gerenciamento de estado
   provider: ^6.1.2
-
-  # Rede
   http: ^1.2.1
   connectivity_plus: ^6.0.3
   network_info_plus: ^5.0.3
-
-  # Persistência local
   shared_preferences: ^2.3.2
   flutter_secure_storage: ^9.2.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-
-  # Autenticação biométrica
   local_auth: ^2.3.0
-
-  # Notificações locais
   flutter_local_notifications: ^17.2.1
-
-  # Background fetch (tarefas em segundo plano)
   background_fetch: ^1.2.4
-
-  # Criptografia
   encrypt: ^5.0.3
   pointycastle: ^3.9.1
-
-  # Animações
   flutter_spinkit: ^5.2.1
-
-  # Logs
   logger: ^2.2.0
-
-  # JSON
   json_annotation: ^4.9.0
-
-  # WebSocket / MQTT (para integrações futuras)
   mqtt_client: ^10.2.1
   web_socket_channel: ^3.0.1
-
-  # UI extra (ícones, formatação, etc.)
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
@@ -63,13 +40,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/icons/
-    - assets/images/
+  # Se você não tem os ícones e fontes, comente ou remova essas linhas
+  # assets:
+  #   - assets/icons/
+  #   - assets/images/
 
-  fonts:
-    - family: Roboto
-      fonts:
-        - asset: assets/fonts/Roboto-Regular.ttf
-        - asset: assets/fonts/Roboto-Bold.ttf
-          weight: 700
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700
