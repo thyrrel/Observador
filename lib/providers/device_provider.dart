@@ -1,18 +1,29 @@
 import 'package:flutter/foundation.dart';
-import '../models/device_model.dart';
-import '../services/device_service.dart';
+import '../services/network_service.dart';
 
 class DeviceProvider extends ChangeNotifier {
-  final DeviceService _service = DeviceService();
-  List<NetworkDevice> get devices => _service.getAllDevices();
+  final NetworkService _networkService;
+  List<NetworkDevice> _devices = [];
 
-  void addDevice(NetworkDevice device) {
-    _service.addDevice(device);
+  DeviceProvider(this._networkService) {
+    _devices = _networkService.devices;
+    _networkService.addListener(_updateDevices);
+  }
+
+  List<NetworkDevice> get devices => _devices;
+
+  void _updateDevices() {
+    _devices = _networkService.devices;
     notifyListeners();
   }
 
-  void removeDevice(NetworkDevice device) {
-    _service.removeDevice(device);
-    notifyListeners();
+  void toggleBlockDevice(NetworkDevice device) {
+    _networkService.toggleBlock(device);
+  }
+
+  @override
+  void dispose() {
+    _networkService.removeListener(_updateDevices);
+    super.dispose();
   }
 }
