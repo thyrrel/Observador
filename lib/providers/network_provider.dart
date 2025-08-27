@@ -1,22 +1,21 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/network_service.dart';
 
-class NetworkProvider with ChangeNotifier {
+class NetworkProvider extends ChangeNotifier {
   final NetworkService _networkService = NetworkService();
+  Map<String, dynamic> _networkData = {};
+  bool _loading = false;
 
-  List<NetworkDevice> get devices => _networkService.devices;
+  Map<String, dynamic> get networkData => _networkData;
+  bool get loading => _loading;
 
-  NetworkProvider() {
-    _networkService.addListener(() {
-      notifyListeners();
-    });
-  }
+  Future<void> loadNetworkData() async {
+    _loading = true;
+    notifyListeners();
 
-  Future<void> refreshNetwork() async {
-    await _networkService.scanNetwork();
-  }
+    _networkData = await _networkService.getNetworkStatus();
 
-  void toggleBlock(NetworkDevice device) {
-    _networkService.toggleBlock(device);
+    _loading = false;
+    notifyListeners();
   }
 }
