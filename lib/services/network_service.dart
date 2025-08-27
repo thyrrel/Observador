@@ -1,4 +1,3 @@
-// lib/services/network_service.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -70,17 +69,9 @@ class NetworkService with ChangeNotifier {
     _scanTimer = Timer.periodic(const Duration(seconds: 60), (_) => scanNetwork());
   }
 
-  Future<String?> getWifiName() async {
-    return await _networkInfo.getWifiName();
-  }
-
-  Future<String?> getWifiIP() async {
-    return await _networkInfo.getWifiIP();
-  }
-
-  Future<String?> getGatewayIP() async {
-    return await _networkInfo.getWifiGatewayIP();
-  }
+  Future<String?> getWifiName() async => await _networkInfo.getWifiName();
+  Future<String?> getWifiIP() async => await _networkInfo.getWifiIP();
+  Future<String?> getGatewayIP() async => await _networkInfo.getWifiGatewayIP();
 
   Future<void> scanNetwork() async {
     final localIp = await getWifiIP();
@@ -126,7 +117,6 @@ class NetworkService with ChangeNotifier {
   }
 }
 
-// Extension para ping simples
 extension on InternetAddress {
   Future<bool> ping({Duration timeout = const Duration(seconds: 1)}) async {
     try {
