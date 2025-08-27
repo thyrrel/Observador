@@ -1,5 +1,5 @@
 name: observador
-description: App Observador - monitoramento de rede em tempo real.
+description: App Observador - monitoramento de rede em tempo real
 version: 1.0.0+1
 
 environment:
@@ -14,9 +14,14 @@ dependencies:
   path: ^1.8.3
   flutter_secure_storage: ^9.0.0
   workmanager: ^0.5.1
-  connectivity_plus: ^6.1.5      # <-- versão corrigida
-  network_info_plus: ^4.1.0
+  connectivity_plus: ^6.1.5
+  network_info_plus: ^4.2.0
   flutter_local_notifications: ^14.0.0
+  local_auth: ^2.2.2
+  shared_preferences: ^2.2.3
+  http: ^1.1.1
+  pdf: ^3.9.0
+  share_plus: ^6.4.0
 
 dev_dependencies:
   flutter_test:
