@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
 import '../services/network_service.dart';
 import 'package:provider/provider.dart';
+import '../providers/network_provider.dart';
 
 class DeviceTile extends StatelessWidget {
   final NetworkDevice device;
+
   const DeviceTile({super.key, required this.device});
 
   @override
   Widget build(BuildContext context) {
-    final networkService = Provider.of<NetworkService>(context);
+    final provider = Provider.of<NetworkProvider>(context, listen: false);
 
     return ListTile(
+      leading: Icon(device.blocked ? Icons.lock : Icons.devices),
       title: Text(device.name),
-      subtitle: Text('${device.ip} | ${device.mac}'),
+      subtitle: Text('${device.ip}\n${device.mac}'),
+      isThreeLine: true,
       trailing: IconButton(
-        icon: Icon(
-          device.blocked ? Icons.lock : Icons.lock_open,
-          color: device.blocked ? Colors.red : Colors.green,
-        ),
+        icon: Icon(device.blocked ? Icons.lock_open : Icons.lock),
         onPressed: () {
-          networkService.toggleBlock(device);
+          provider.toggleBlockDevice(device);
         },
       ),
     );
