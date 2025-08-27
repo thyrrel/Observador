@@ -24,7 +24,7 @@ jobs:
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0' # versão estável compatível com Actions
+          flutter-version: '3.24.0'
 
       - name: Tornar gradlew executável
         run: chmod +x android/gradlew
@@ -35,22 +35,22 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
-      - name: Verificar versão do Kotlin
+      - name: Atualizar compileSdk para 35
         run: |
-          echo "Kotlin versão mínima necessária é 1.9.24"
-          sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.9.24"/' android/build.gradle || true
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 35/' android/app/build.gradle
+          sed -i 's/targetSdkVersion .*/targetSdkVersion 35/' android/app/build.gradle
 
       - name: Build APK
         run: flutter build apk --release
 
       # -----------------------------
-      # 🚀 Build App Bundle (.aab) - Mantido comentado
+      # Build App Bundle (.aab) - Mantido comentado
       # -----------------------------
       # - name: Build App Bundle (.aab)
       #   run: flutter build appbundle --release
 
       # -----------------------------
-      # 🚀 Upload APK
+      # Upload APK
       # -----------------------------
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -60,7 +60,7 @@ jobs:
           retention-days: 7
 
       # -----------------------------
-      # 🚀 Upload AAB - Mantido comentado
+      # Upload AAB - Mantido comentado
       # -----------------------------
       # - name: Upload AAB
       #   uses: actions/upload-artifact@v4
@@ -70,7 +70,7 @@ jobs:
       #     retention-days: 7
 
       # -----------------------------
-      # 🚀 Publicação na Google Play - Mantido comentado
+      # Publicação na Google Play - Mantido comentado
       # -----------------------------
       # - name: Deploy to Google Play
       #   uses: r0adkll/upload-google-play@v1
