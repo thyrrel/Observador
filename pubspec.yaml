@@ -1,36 +1,27 @@
 name: observador
-description: App Observador - monitoramento de rede em tempo real
+description: Aplicativo Guarda-Costas Smart Home
+
+publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.2.0 <4.0.0"
+  sdk: '>=2.17.0 <3.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-
-  provider: ^6.0.5
-  sqflite: ^2.2.8+1
-  path: ^1.8.3
-  flutter_secure_storage: ^9.0.0
-  workmanager: ^0.5.1
-  connectivity_plus: ^6.1.5
-  network_info_plus: ^4.2.0
-  flutter_local_notifications: ^14.0.0
-  local_auth: ^2.2.2
-  shared_preferences: ^2.2.3
-  http: ^1.1.1
-  pdf: ^3.9.0
-  share_plus: ^6.4.0
+  cupertino_icons: ^1.0.2
+  flutter_blue: ^0.8.0
+  connectivity_plus: ^3.0.3
+  shared_preferences: ^2.0.15
+  http: ^0.13.5
+  share_plus: ^7.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.1
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/icons/
-    - assets/fonts/
