@@ -35,43 +35,12 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
-      - name: Build APK Release
+      - name: Build APK
         run: flutter build apk --release
 
-      # -----------------------------
-      # Upload APK
-      # -----------------------------
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
-
-      # -----------------------------
-      # Build App Bundle (.aab) - Mantido comentado
-      # -----------------------------
-      # - name: Build App Bundle (.aab)
-      #   run: flutter build appbundle --release
-
-      # -----------------------------
-      # Upload AAB - Mantido comentado
-      # -----------------------------
-      # - name: Upload AAB
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: android-aab
-      #     path: build/app/outputs/bundle/release/app-release.aab
-      #     retention-days: 7
-
-      # -----------------------------
-      # Deploy Google Play - Mantido comentado
-      # -----------------------------
-      # - name: Deploy to Google Play
-      #   uses: r0adkll/upload-google-play@v1
-      #   with:
-      #     serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
-      #     packageName: com.thyrrel.observador
-      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
-      #     track: internal
-      #     status: completed
