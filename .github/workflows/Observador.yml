@@ -2,212 +2,42 @@ name: Observador
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Java 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    
-    - name: Setup Flutter (Latest)
-      uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
-        cache: true
-    
-    - name: Verify Flutter installation
-      run: |
-        flutter --version
-        dart --version
-        echo "Flutter channel: $(flutter channel)"
-    
-    - name: Analyze original pubspec and extract dependencies
-      run: |
-        echo "=== Analyzing original pubspec.yaml ==="
-        if [ -f "pubspec.yaml" ]; then
-          cat pubspec.yaml
-          
-          # Extract dependencies (skip SDK constraints)
-          echo "=== Extracting dependencies ==="
-          sed -n '/^dependencies:/,/^[a-z]/p' pubspec.yaml | head -n -1 > /tmp/deps.txt
-          sed -n '/^dev_dependencies:/,/^[a-z]/p' pubspec.yaml | head -n -1 > /tmp/dev_deps.txt
-          
-          echo "Dependencies found:"
-          cat /tmp/deps.txt || echo "No dependencies section"
-          echo "Dev dependencies found:"
-          cat /tmp/dev_deps.txt || echo "No dev_dependencies section"
-        else
-          echo "No original pubspec.yaml found"
-        fi
-    
-    - name: Backup project files
-      run: |
-        echo "=== Backing up important files ==="
-        mkdir -p /tmp/backup
-        
-        if [ -d "lib" ]; then
-          cp -r lib /tmp/backup/
-          echo "✓ Backed up lib directory"
-        fi
-        
-        if [ -d "assets" ]; then
-          cp -r assets /tmp/backup/
-          echo "✓ Backed up assets directory"
-        fi
-    
-    - name: Create fresh Flutter project
-      run: |
-        echo "=== Creating new Flutter project ==="
-        cd /tmp
-        flutter create \
-          --project-name observador \
-          --org com.example \
-          --android-language kotlin \
-          --ios-language swift \
-          fresh_project
-    
-    - name: Create smart pubspec.yaml with original dependencies
-      run: |
-        cd /tmp/fresh_project
-        echo "=== Creating smart pubspec.yaml ==="
-        
-        # Get current versions
-        DART_VERSION=$(dart --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-        FLUTTER_VERSION=$(flutter --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-        
-        echo "Using Dart: $DART_VERSION, Flutter: $FLUTTER_VERSION"
-        
-        # Start creating the pubspec
-        cat > pubspec.yaml << 'EOF'
-        name: observador
-        description: Observador Flutter app
-        publish_to: 'none'
-        version: 1.0.0+1
-        
-        environment:
-          sdk: '>=3.0.0 <4.0.0'
-          flutter: ">=3.0.0"
-        
-        dependencies:
-          flutter:
-            sdk: flutter
-          cupertino_icons: ^1.0.2
-        EOF
-        
-        # Add original dependencies if they exist
-        if [ -f "/tmp/deps.txt" ] && [ -s "/tmp/deps.txt" ]; then
-          echo "Adding original dependencies..."
-          # Skip the first line (dependencies:) and flutter sdk
-          grep -v "flutter:" /tmp/deps.txt | grep -v "dependencies:" | grep -v "sdk: flutter" >> pubspec.yaml || true
-        fi
-        
-        # Add dev dependencies
-        echo "" >> pubspec.yaml
-        echo "dev_dependencies:" >> pubspec.yaml
-        echo "  flutter_test:" >> pubspec.yaml
-        echo "    sdk: flutter" >> pubspec.yaml
-        echo "  flutter_lints: ^3.0.0" >> pubspec.yaml
-        
-        if [ -f "/tmp/dev_deps.txt" ] && [ -s "/tmp/dev_deps.txt" ]; then
-          echo "Adding original dev dependencies..."
-          grep -v "dev_dependencies:" /tmp/dev_deps.txt | grep -v "flutter_test:" | grep -v "flutter_lints:" >> pubspec.yaml || true
-        fi
-        
-        # Add flutter section
-        echo "" >> pubspec.yaml
-        echo "flutter:" >> pubspec.yaml
-        echo "  uses-material-design: true" >> pubspec.yaml
-        echo "" >> pubspec.yaml
-        echo "  assets:" >> pubspec.yaml
-        echo "    - assets/" >> pubspec.yaml
-        
-        echo "=== Final pubspec.yaml ==="
-        cat pubspec.yaml
-    
-    - name: Restore project files
-      run: |
-        cd /tmp/fresh_project
-        
-        if [ -d "/tmp/backup/lib" ]; then
-          rm -rf lib
-          cp -r /tmp/backup/lib .
-          echo "✓ Restored lib directory"
-        fi
-        
-        if [ -d "/tmp/backup/assets" ]; then
-          cp -r /tmp/backup/assets .
-          echo "✓ Restored assets directory"
-        fi
-    
-    - name: Get dependencies with fallback
-      run: |
-        cd /tmp/fresh_project
-        echo "=== Getting Flutter dependencies ==="
-        
-        # Try to get dependencies, if it fails, use a minimal pubspec
-        if ! flutter pub get; then
-          echo "⚠ Dependencies failed, creating minimal pubspec..."
-          cat > pubspec.yaml << EOF
-        name: observador
-        description: Observador Flutter app
-        publish_to: 'none'
-        version: 1.0.0+1
-        
-        environment:
-          sdk: '>=3.0.0 <4.0.0'
-          flutter: ">=3.0.0"
-        
-        dependencies:
-          flutter:
-            sdk: flutter
-          cupertino_icons: ^1.0.2
-        
-        dev_dependencies:
-          flutter_test:
-            sdk: flutter
-          flutter_lints: ^3.0.0
-        
-        flutter:
-          uses-material-design: true
-          assets:
-            - assets/
-        EOF
-          
-          echo "Retrying with minimal pubspec..."
-          flutter pub get
-        fi
-    
-    - name: Build APK
-      run: |
-        cd /tmp/fresh_project
-        flutter clean
-        flutter pub get
-        flutter build apk --release --verbose
-    
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: observador-apk-smart
-        path: /tmp/fresh_project/build/app/outputs/flutter-apk/app-release.apk
-        retention-days: 30
-    
-    - name: Show result
-      run: |
-        APK_PATH="/tmp/fresh_project/build/app/outputs/flutter-apk/app-release.apk"
-        if [ -f "$APK_PATH" ]; then
-          echo "✅ APK built successfully!"
-          ls -lh "$APK_PATH"
-        else
-          echo "❌ APK not found"
-          exit 1
-        fi
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0" # ajuste para a versão que você usa
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build APK (release)
+        run: flutter build apk --release
+
+      - name: Build AppBundle (release)
+        run: flutter build appbundle --release
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-outputs
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
