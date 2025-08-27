@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
 import 'screens/admin_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final appState = AppState();
+  await appState.loadTheme();
+
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AppState()),
-      ],
+    ChangeNotifierProvider.value(
+      value: appState,
       child: ObservadorApp(),
     ),
   );
@@ -20,19 +22,7 @@ class ObservadorApp extends StatelessWidget {
     final appState = Provider.of<AppState>(context);
     return MaterialApp(
       title: 'Observador - Smart Home',
-      theme: appState.darkMode
-          ? ThemeData.dark().copyWith(
-              primaryColor: Colors.blueGrey[800],
-              colorScheme: ColorScheme.fromSwatch().copyWith(
-                  secondary: Colors.cyan[300],
-              ),
-            )
-          : ThemeData.light().copyWith(
-              primaryColor: Colors.blue,
-              colorScheme: ColorScheme.fromSwatch().copyWith(
-                  secondary: Colors.lightBlue[200],
-              ),
-            ),
+      theme: appState.themeData,
       home: AdminScreen(),
       debugShowCheckedModeBanner: false,
     );
