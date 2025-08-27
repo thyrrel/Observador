@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/network_provider.dart';
-import 'screens/network_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const ObservadorApp());
@@ -12,15 +12,15 @@ class ObservadorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => NetworkProvider()..loadNetworkData()),
-      ],
+    return ChangeNotifierProvider(
+      create: (_) => NetworkProvider(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Observador',
-        theme: ThemeData.dark(useMaterial3: true),
-        home: const NetworkScreen(),
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: const HomeScreen(),
       ),
     );
   }
