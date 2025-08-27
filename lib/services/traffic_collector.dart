@@ -1,19 +1,14 @@
-import 'db_helper.dart';
-import '../models/device_model.dart';
+import 'package:sqflite/sqflite.dart';
 
 class TrafficCollector {
-  Future<void> collectOnce(DeviceModel device) async {
-    final db = await DBHelper.getDatabase();
-    // Exemplo: inserir dispositivo no DB
+  final Database db;
+
+  TrafficCollector(this.db);
+
+  Future<void> logTraffic(Map<String, dynamic> traffic) async {
     await db.insert(
-      'devices',
-      {
-        'ip': device.ip,
-        'mac': device.mac,
-        'name': device.name,
-        'type': device.type,
-        'manufacturer': device.manufacturer
-      },
+      'traffic',
+      traffic,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
