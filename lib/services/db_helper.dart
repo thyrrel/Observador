@@ -1,32 +1,16 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import '../models/device_traffic.dart';
 
 class DBHelper {
-  static Database? _db;
+  DBHelper();
 
-  static Future<Database> getDatabase() async {
-    if (_db != null) return _db!;
-    _db = await _initDB();
-    return _db!;
-  }
+  // Exemplo de dados simulados; futuramente substitua por dados reais
+  Future<List<DeviceTraffic>> last7Days() async {
+    await Future.delayed(const Duration(milliseconds: 500)); // Simula delay de DB
 
-  static Future<Database> _initDB() async {
-    String path = join(await getDatabasesPath(), 'observador.db');
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE devices(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ip TEXT,
-            mac TEXT,
-            name TEXT,
-            type TEXT,
-            manufacturer TEXT
-          )
-        ''');
-      },
-    );
+    return [
+      DeviceTraffic(deviceName: 'Dispositivo 1', rxBytes: 1024, txBytes: 512),
+      DeviceTraffic(deviceName: 'Dispositivo 2', rxBytes: 2048, txBytes: 1024),
+      DeviceTraffic(deviceName: 'Dispositivo 3', rxBytes: 512, txBytes: 256),
+    ];
   }
 }
