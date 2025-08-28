@@ -1,34 +1,48 @@
-// dentro de HomePage → children: [
-_buildCard(
-  icon: Icons.speed,
-  title: 'Dashboard de Banda',
-  subtitle: 'Veja quem está usando a rede agora',
-  onTap: () => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const DashboardPage()),
-  ),
-),
+import 'package:flutter/material.dart';
+import 'dashboard_page.dart';
+import 'network_control_page.dart';
+import 'ai_assistant_page.dart';
+import 'settings_page.dart';
 
-_buildCard(
-  icon: Icons.network_check,
-  title: 'Controle de Rede',
-  subtitle: 'Bloqueie ou dê prioridade',
-  onTap: () => Navigator.push(context,
-      MaterialPageRoute(builder: (_) => const NetworkControlPage())),
-),
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
-_buildCard(
-  icon: Icons.assistant,
-  title: 'Assistente IA',
-  subtitle: 'Sugestões automáticas',
-  onTap: () => Navigator.push(context,
-      MaterialPageRoute(builder: (_) => const AiAssistantPage())),
-),
+  Widget _buildCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        onTap: onTap,
+      ),
+    );
+  }
 
-_buildCard(
-  icon: Icons.palette,
-  title: 'Aparência',
-  subtitle: 'Temas, cores e modo escuro',
-  onTap: () => Navigator.push(context,
-      MaterialPageRoute(builder: (_) => const SettingsPage())),
-),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Observador')),
+      body: ListView(
+        padding: const EdgeInsets.all(8),
+        children: [
+          _buildCard(
+            icon: Icons.dashboard,
+            title: 'Dashboard',
+            subtitle: 'Visualizar estatísticas',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DashboardPage()),
+              );
+            },
+          ),
+          _buildCard(
+            icon: Icons.network_wifi,
+            title: 'Controle de Rede',
+            subtitle: 'Gerenciar dispositivos conectados',
+            onTap: ()
