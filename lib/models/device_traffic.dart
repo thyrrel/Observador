@@ -1,10 +1,11 @@
+// lib/models/device_traffic.dart
 class DeviceTraffic {
-  final String deviceName;
-  final int rxBytes;
-  final int txBytes;
+  final String day;
+  final int rxBytes; // Download
+  final int txBytes; // Upload
 
   DeviceTraffic({
-    required this.deviceName,
+    required this.day,
     required this.rxBytes,
     required this.txBytes,
   });
