@@ -22,6 +22,15 @@ dependencies:
   connectivity_plus: ^6.0.3
   package_info_plus: ^8.0.0
   device_info_plus: ^10.1.0
+  
+  # Dependências que estavam faltando
+  flutter_secure_storage: ^9.2.2
+  provider: ^6.1.2
+  workmanager: ^0.5.2
+  pdf: ^3.10.8
+  
+  # Para relatórios PDF
+  printing: ^5.12.0
 
 dev_dependencies:
   flutter_test:
@@ -34,8 +43,6 @@ flutter:
   
   assets:
     - assets/
-    - assets/images/
-    - assets/icons/
     
   # fonts:
   #   - family: Schyler
