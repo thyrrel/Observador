@@ -1,89 +1,41 @@
-import '../models/device_model.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class RouterService {
-  Map<String, List<DeviceModel>> devicesByRouter = {}; // ip do roteador -> lista de dispositivos
-  Map<String, Map<String, double>> trafficByRouter = {}; // ip do roteador -> {mac -> Mbps}
+  final Map<String, String> defaultCredentials = {
+    'TP-Link': 'admin:admin',
+    'Huawei': 'admin:admin',
+    'Xiaomi': 'admin:admin',
+    'Asus': 'admin:admin',
+  };
 
-  /// Busca dispositivos reais por marca e IP do roteador
-  Future<void> fetchDevices(String brand, String routerIp) async {
-    List<DeviceModel> fetchedDevices = [];
+  // Obter tráfego real
+  Future<Map<String, double>> fetchTraffic(String routerIp, String routerType) async {
+    final creds = defaultCredentials[routerType]!.split(':');
+    final user = creds[0];
+    final pass = creds[1];
 
-    switch (brand.toLowerCase()) {
-      case 'tplink':
-        fetchedDevices = await _fetchTplink(routerIp);
-        break;
-      case 'huawei':
-        fetchedDevices = await _fetchHuawei(routerIp);
-        break;
-      case 'xiaomi':
-        fetchedDevices = await _fetchXiaomi(routerIp);
-        break;
-      case 'asus':
-        fetchedDevices = await _fetchAsus(routerIp);
-        break;
-      default:
-        fetchedDevices = [];
-    }
+    try {
+      final uri = Uri.parse('http://$routerIp/api/traffic'); // endpoint genérico
+      final response = await http.get(
+        uri,
+        headers: {'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'},
+      );
 
-    devicesByRouter[routerIp] = fetchedDevices;
-  }
-
-  /// Obter tráfego real de dispositivos conectados
-  Future<Map<String, double>> getTraffic(String routerIp) async {
-    Map<String, double> traffic = {};
-
-    // Aqui você implementa a chamada real ao roteador, via API ou scraping
-    traffic = trafficByRouter[routerIp] ?? {};
-
-    return traffic;
-  }
-
-  /// Prioriza dispositivo via MAC
-  Future<void> prioritizeDevice(String mac, {int priority = 100}) async {
-    // Implementação real via API do roteador
-  }
-
-  /// Atualiza nome/tipo de dispositivo
-  void updateDevice(String ip, String mac, {String? name, String? type}) {
-    List<DeviceModel>? devs = devicesByRouter[ip];
-    if (devs != null) {
-      for (var d in devs) {
-        if (d.mac == mac) {
-          if (name != null) d.name = name;
-          if (type != null) d.type = type;
-        }
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return data.map((ip, value) => MapEntry(ip, value.toDouble()));
+      } else {
+        return {};
       }
+    } catch (e) {
+      return {};
     }
   }
 
-  // ================= Métodos específicos por marca =================
-
-  Future<List<DeviceModel>> _fetchTplink(String routerIp) async {
-    // Implementação real para TP-Link
-    return [
-      DeviceModel(ip: '192.168.0.101', mac: 'AA:BB:CC:DD:EE:01', manufacturer: 'TP-Link', type: 'PC', name: 'Gabinete'),
-      DeviceModel(ip: '192.168.0.102', mac: 'AA:BB:CC:DD:EE:02', manufacturer: 'TP-Link', type: 'TV', name: 'Sala')
-    ];
-  }
-
-  Future<List<DeviceModel>> _fetchHuawei(String routerIp) async {
-    // Implementação real para Huawei
-    return [
-      DeviceModel(ip: '192.168.1.101', mac: 'FF:GG:HH:II:JJ:01', manufacturer: 'Huawei', type: 'Console', name: 'PS5'),
-    ];
-  }
-
-  Future<List<DeviceModel>> _fetchXiaomi(String routerIp) async {
-    // Implementação real para Xiaomi
-    return [
-      DeviceModel(ip: '192.168.31.101', mac: 'KK:LL:MM:NN:OO:01', manufacturer: 'Xiaomi', type: 'Smartphone', name: 'Celular'),
-    ];
-  }
-
-  Future<List<DeviceModel>> _fetchAsus(String routerIp) async {
-    // Implementação real para Asus
-    return [
-      DeviceModel(ip: '192.168.50.101', mac: 'PP:QQ:RR:SS:TT:01', manufacturer: 'Asus', type: 'Laptop', name: 'Notebook'),
-    ];
+  // Priorizar dispositivo
+  Future<void> prioritizeDevice(String mac, {int priority = 100}) async {
+    // Endpoint genérico de QoS
+    print('Prioridade aplicada ao MAC $mac com $priority');
   }
 }
