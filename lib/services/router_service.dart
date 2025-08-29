@@ -2,40 +2,73 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class RouterService {
-  final Map<String, String> defaultCredentials = {
-    'TP-Link': 'admin:admin',
-    'Huawei': 'admin:admin',
-    'Xiaomi': 'admin:admin',
-    'Asus': 'admin:admin',
+  // Credenciais padrão por marca
+  final Map<String, Map<String, String>> defaultCredentials = {
+    'Huawei': {'user': 'admin', 'pass': 'admin'},
+    'TPLink': {'user': 'admin', 'pass': 'admin'},
+    'Xiaomi': {'user': 'admin', 'pass': 'admin'},
+    'Asus': {'user': 'admin', 'pass': 'admin'},
   };
 
-  // Obter tráfego real
-  Future<Map<String, double>> fetchTraffic(String routerIp, String routerType) async {
-    final creds = defaultCredentials[routerType]!.split(':');
-    final user = creds[0];
-    final pass = creds[1];
-
+  // Função para login automático
+  Future<bool> login(String brand, String ip,
+      {String? username, String? password}) async {
+    final creds = defaultCredentials[brand]!;
+    final user = username ?? creds['user']!;
+    final pass = password ?? creds['pass']!;
     try {
-      final uri = Uri.parse('http://$routerIp/api/traffic'); // endpoint genérico
-      final response = await http.get(
-        uri,
-        headers: {'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'},
+      // Exemplo de requisição de login genérico
+      final response = await http.post(
+        Uri.parse('http://$ip/login'),
+        body: {'username': user, 'password': pass},
       );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return data.map((ip, value) => MapEntry(ip, value.toDouble()));
-      } else {
-        return {};
-      }
+      return response.statusCode == 200;
     } catch (e) {
-      return {};
+      return false;
     }
   }
 
-  // Priorizar dispositivo
-  Future<void> prioritizeDevice(String mac, {int priority = 100}) async {
-    // Endpoint genérico de QoS
-    print('Prioridade aplicada ao MAC $mac com $priority');
+  // Função para priorizar dispositivo via MAC
+  Future<bool> prioritizeDevice(String ip, String mac,
+      {int priority = 100}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$ip/qos/prioritize'),
+        body: jsonEncode({'mac': mac, 'priority': priority}),
+        headers: {'Content-Type': 'application/json'},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Função para obter lista de dispositivos conectados
+  Future<List<Map<String, dynamic>>> fetchConnectedDevices(
+      String brand, String ip) async {
+    try {
+      final response = await http.get(Uri.parse('http://$ip/devices'));
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      } else {
+        return [];
+      }
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Função para aplicar configuração completa em um roteador
+  Future<void> configureRouter(String brand, String ip,
+      {String? username, String? password}) async {
+    final loggedIn = await login(brand, ip, username: username, password: password);
+    if (!loggedIn) return;
+
+    final devices = await fetchConnectedDevices(brand, ip);
+    for (var device in devices) {
+      if (device['type'] == 'Console' || device['type'] == 'PC') {
+        await prioritizeDevice(ip, device['mac'], priority: 200);
+      }
+    }
   }
 }
