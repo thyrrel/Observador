@@ -1,105 +1,109 @@
-// lib/services/ai_network_manager.dart
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'router_service.dart';
-import 'dashboard_service.dart';
-import 'notifications_service.dart';
+import '../models/device_model.dart';
+import '../services/router_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-enum TrafficType { gaming, streaming, browsing, unknown }
+typedef VoiceCallback = void Function(String msg);
 
-class AiNetworkManager {
+class IANetworkManager {
   final RouterService routerService;
-  final DashboardService dashboardService;
-  final NotificationsService notificationsService;
+  final VoiceCallback voiceCallback;
+  final FlutterLocalNotificationsPlugin notificationsPlugin;
 
-  // Histórico de uso por dispositivo (ID -> últimos tipos de tráfego)
-  final Map<String, List<TrafficType>> _usageHistory = {};
-
-  // Intervalo de monitoramento
+  List<DeviceModel> devices = [];
+  Map<String, List<double>> trafficHistory = {}; // IP -> lista de Mbps
+  Map<String, String> deviceUsageType = {}; // IP -> tipo de uso
   Timer? _monitorTimer;
 
-  AiNetworkManager({
+  IANetworkManager({
     required this.routerService,
-    required this.dashboardService,
-    required this.notificationsService,
+    required this.voiceCallback,
+    required this.notificationsPlugin,
   });
 
-  /// Inicia monitoramento contínuo
-  void startMonitoring({Duration interval = const Duration(seconds: 5)}) {
+  /// Inicializa o monitoramento contínuo
+  void startMonitoring({int intervalSeconds = 5}) {
     _monitorTimer?.cancel();
-    _monitorTimer = Timer.periodic(interval, (_) => _analyzeNetwork());
+    _monitorTimer = Timer.periodic(Duration(seconds: intervalSeconds), (_) async {
+      await _updateDevices();
+      _analyzeTraffic();
+    });
   }
 
-  /// Para o monitoramento
   void stopMonitoring() {
     _monitorTimer?.cancel();
-    _monitorTimer = null;
   }
 
-  /// Análise principal da rede
-  Future<void> _analyzeNetwork() async {
-    final devices = await routerService.getConnectedDevices();
+  /// Atualiza a lista de dispositivos e tráfego
+  Future<void> _updateDevices() async {
+    devices = await routerService.getConnectedDevices();
+    for (var d in devices) {
+      trafficHistory[d.ip] ??= [];
+      double mbps = await routerService.getDeviceTraffic(d.mac);
+      trafficHistory[d.ip]?.add(mbps);
 
-    for (var device in devices) {
-      final trafficType = _predictTrafficType(device.id);
-      _updateHistory(device.id, trafficType);
-      await _prioritizeDevice(device.id, trafficType);
+      // Mantém histórico de últimas 10 leituras
+      if (trafficHistory[d.ip]!.length > 10) {
+        trafficHistory[d.ip]!.removeAt(0);
+      }
     }
   }
 
-  /// Predição simples baseada em histórico recente
-  TrafficType _predictTrafficType(String deviceId) {
-    final history = _usageHistory[deviceId] ?? [];
-    if (history.isEmpty) return TrafficType.unknown;
+  /// Analisa tráfego e hábitos para tomar decisões
+  void _analyzeTraffic() {
+    for (var d in devices) {
+      double currentMbps = trafficHistory[d.ip]?.last ?? 0;
+      String usageType = deviceUsageType[d.ip] ?? d.type;
 
-    final last = history.last;
-    // Se padrão recente indicar streaming, mantém
-    if (last == TrafficType.streaming) return TrafficType.streaming;
-    if (last == TrafficType.gaming) return TrafficType.gaming;
-    return TrafficType.browsing;
-  }
+      // Dispositivo desconhecido
+      if (d.type.contains('Desconhecido')) {
+        _notify('Dispositivo suspeito detectado: ${d.name}');
+      }
 
-  /// Atualiza histórico local
-  void _updateHistory(String deviceId, TrafficType type) {
-    final history = _usageHistory.putIfAbsent(deviceId, () => []);
-    history.add(type);
-    if (history.length > 10) history.removeAt(0); // mantém últimos 10 registros
-  }
+      // Streaming vs Jogo
+      if (usageType.contains('TV') && currentMbps > 20) {
+        DeviceModel? gameDevice = devices.firstWhere(
+            (d) => d.type.contains('Console') || d.type.contains('PC'),
+            orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: ''));
 
-  /// Priorização de acordo com o tipo de tráfego
-  Future<void> _prioritizeDevice(String deviceId, TrafficType type) async {
-    switch (type) {
-      case TrafficType.gaming:
-        await routerService.setHighPriority(deviceId);
-        notificationsService.show(
-          title: "Prioridade de Rede",
-          body: "Dispositivo $deviceId priorizado para jogos",
-        );
-        break;
-      case TrafficType.streaming:
-        await routerService.setMediumPriority(deviceId);
-        notificationsService.show(
-          title: "Prioridade de Rede",
-          body: "Dispositivo $deviceId priorizado para streaming",
-        );
-        break;
-      case TrafficType.browsing:
-      case TrafficType.unknown:
-        await routerService.setNormalPriority(deviceId);
-        break;
+        if (gameDevice.ip != '') {
+          voiceCallback('TV ${d.name} está usando $currentMbps Mbps. Priorizando ${gameDevice.name}.');
+          _prioritizeDevice(gameDevice);
+        }
+      }
     }
   }
 
-  /// Integração com Dashboard para exibir status em tempo real
-  List<Map<String, dynamic>> getDashboardData() {
-    final devices = routerService.getCachedDevices();
-    return devices.map((d) {
-      final lastType = _usageHistory[d.id]?.last ?? TrafficType.unknown;
-      return {
-        "id": d.id,
-        "name": d.name,
-        "trafficType": lastType.toString().split('.').last,
-      };
-    }).toList();
+  /// Prioriza dispositivo no roteador
+  void _prioritizeDevice(DeviceModel device, {int priority = 200}) {
+    routerService.prioritizeDevice(device.mac, priority: priority);
+    _notify('Dispositivo ${device.name} priorizado com QoS $priority.');
+  }
+
+  /// Notificação local
+  void _notify(String msg) async {
+    voiceCallback(msg);
+    var androidDetails = AndroidNotificationDetails(
+      'ia_alerts',
+      'IA Alerts',
+      channelDescription: 'Alertas e notificações da IA',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    var platformDetails = NotificationDetails(android: androidDetails);
+    await notificationsPlugin.show(0, 'C.O.R.T.E.X.', msg, platformDetails);
+  }
+
+  /// Define tipo de uso manualmente ou via aprendizado
+  void setDeviceUsageType(String ip, String type) {
+    deviceUsageType[ip] = type;
+  }
+
+  /// Retorna histórico de tráfego para dashboard
+  List<double> getTrafficHistory(String ip) => trafficHistory[ip] ?? [];
+
+  /// Limpa histórico
+  void clearHistory() {
+    trafficHistory.clear();
   }
 }
