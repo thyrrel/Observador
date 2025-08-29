@@ -1,112 +1,104 @@
-// lib/screens/dashboard_screen.dart
-
 import 'package:flutter/material.dart';
-import '../services/router_service.dart';
-import '../services/ia_service.dart';
+import 'package:hive/hive.dart';
 import '../models/device_model.dart';
+import '../services/ia_service.dart';
+import '../services/router_service.dart';
 
 class DashboardScreen extends StatefulWidget {
-  final RouterService routerService;
   final IAService iaService;
+  final RouterService routerService;
 
-  const DashboardScreen({
-    Key? key,
-    required this.routerService,
-    required this.iaService,
-  }) : super(key: key);
+  const DashboardScreen({required this.iaService, required this.routerService, Key? key}) : super(key: key);
 
   @override
-  _DashboardScreenState createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  late Box<DeviceModel> deviceBox;
   List<DeviceModel> devices = [];
-  Map<String, double> traffic = {};
 
   @override
   void initState() {
     super.initState();
-    _startMonitoring();
+    deviceBox = Hive.box<DeviceModel>('devices');
+    devices = deviceBox.values.toList();
+    _listenTraffic();
   }
 
-  void _startMonitoring() {
-    widget.iaService.startMonitoring(interval: Duration(seconds: 5));
-    Timer.periodic(Duration(seconds: 5), (_) async {
-      await _updateDevices();
+  void _listenTraffic() {
+    // Atualização contínua simulando tráfego real (substituir por dados reais)
+    Future.delayed(Duration(seconds: 5), () {
+      setState(() {
+        devices = deviceBox.values.toList();
+        widget.iaService.analyzeTraffic(devices, _getTrafficMap());
+      });
+      _listenTraffic();
     });
   }
 
-  Future<void> _updateDevices() async {
-    List<DeviceModel> devs = await widget.routerService.getDevices();
-    Map<String, double> traf = {};
-    for (var d in devs) {
-      traf[d.mac] = await widget.routerService.getDeviceTraffic(d.mac);
+  Map<String, double> _getTrafficMap() {
+    Map<String, double> usage = {};
+    for (var d in devices) {
+      usage[d.ip] = (d.traffic ?? 0) + (5 + (devices.indexOf(d) * 3)); // exemplo
     }
-    setState(() {
-      devices = devs;
-      traffic = traf;
-    });
+    return usage;
   }
 
-  void _blockDevice(DeviceModel d) async {
-    await widget.iaService.blockDevice(d);
-    await _updateDevices();
-  }
+  void _editDevice(DeviceModel device) async {
+    TextEditingController nameController = TextEditingController(text: device.name);
+    TextEditingController typeController = TextEditingController(text: device.type);
 
-  void _limitDevice(DeviceModel d, double mbps) async {
-    await widget.iaService.limitDevice(d, mbps);
-    await _updateDevices();
-  }
-
-  void _prioritizeDevice(DeviceModel d, int priority) async {
-    await widget.iaService.prioritizeDevice(d, priority);
-    await _updateDevices();
-  }
-
-  Widget _buildDeviceTile(DeviceModel d) {
-    double mbps = traffic[d.mac] ?? 0;
-    return Card(
-      child: ListTile(
-        title: Text(d.name),
-        subtitle: Text('${d.type} - ${d.manufacturer}\nBanda: ${mbps.toStringAsFixed(2)} Mbps'),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'Bloquear':
-                _blockDevice(d);
-                break;
-              case 'Limitar':
-                _limitDevice(d, 20); // exemplo fixo
-                break;
-              case 'Priorizar':
-                _prioritizeDevice(d, 200); // exemplo fixo
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(value: 'Bloquear', child: Text('Bloquear')),
-            PopupMenuItem(value: 'Limitar', child: Text('Limitar 20 Mbps')),
-            PopupMenuItem(value: 'Priorizar', child: Text('Priorizar 200')),
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar dispositivo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nome')),
+            TextField(controller: typeController, decoration: const InputDecoration(labelText: 'Tipo')),
           ],
         ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () {
+                device.name = nameController.text;
+                device.type = typeController.text;
+                device.save();
+                Navigator.pop(context);
+                setState(() {});
+              },
+              child: const Text('Salvar')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceTile(DeviceModel device) {
+    double traffic = device.traffic ?? 0;
+    return ListTile(
+      title: Text(device.name),
+      subtitle: Text('${device.type} • IP: ${device.ip} • Tráfego: ${traffic.toStringAsFixed(1)} Mbps'),
+      trailing: IconButton(
+        icon: const Icon(Icons.edit),
+        onPressed: () => _editDevice(device),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    devices = deviceBox.values.toList();
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Dashboard de Rede'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _updateDevices,
-        child: ListView.builder(
-          itemCount: devices.length,
-          itemBuilder: (context, index) {
-            return _buildDeviceTile(devices[index]);
-          },
-        ),
+      appBar: AppBar(title: const Text('Dashboard de Dispositivos')),
+      body: ListView.builder(
+        itemCount: devices.length,
+        itemBuilder: (context, index) => _buildDeviceTile(devices[index]),
       ),
     );
   }
