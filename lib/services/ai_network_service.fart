@@ -1,0 +1,105 @@
+// lib/services/ai_network_manager.dart
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'router_service.dart';
+import 'dashboard_service.dart';
+import 'notifications_service.dart';
+
+enum TrafficType { gaming, streaming, browsing, unknown }
+
+class AiNetworkManager {
+  final RouterService routerService;
+  final DashboardService dashboardService;
+  final NotificationsService notificationsService;
+
+  // Histórico de uso por dispositivo (ID -> últimos tipos de tráfego)
+  final Map<String, List<TrafficType>> _usageHistory = {};
+
+  // Intervalo de monitoramento
+  Timer? _monitorTimer;
+
+  AiNetworkManager({
+    required this.routerService,
+    required this.dashboardService,
+    required this.notificationsService,
+  });
+
+  /// Inicia monitoramento contínuo
+  void startMonitoring({Duration interval = const Duration(seconds: 5)}) {
+    _monitorTimer?.cancel();
+    _monitorTimer = Timer.periodic(interval, (_) => _analyzeNetwork());
+  }
+
+  /// Para o monitoramento
+  void stopMonitoring() {
+    _monitorTimer?.cancel();
+    _monitorTimer = null;
+  }
+
+  /// Análise principal da rede
+  Future<void> _analyzeNetwork() async {
+    final devices = await routerService.getConnectedDevices();
+
+    for (var device in devices) {
+      final trafficType = _predictTrafficType(device.id);
+      _updateHistory(device.id, trafficType);
+      await _prioritizeDevice(device.id, trafficType);
+    }
+  }
+
+  /// Predição simples baseada em histórico recente
+  TrafficType _predictTrafficType(String deviceId) {
+    final history = _usageHistory[deviceId] ?? [];
+    if (history.isEmpty) return TrafficType.unknown;
+
+    final last = history.last;
+    // Se padrão recente indicar streaming, mantém
+    if (last == TrafficType.streaming) return TrafficType.streaming;
+    if (last == TrafficType.gaming) return TrafficType.gaming;
+    return TrafficType.browsing;
+  }
+
+  /// Atualiza histórico local
+  void _updateHistory(String deviceId, TrafficType type) {
+    final history = _usageHistory.putIfAbsent(deviceId, () => []);
+    history.add(type);
+    if (history.length > 10) history.removeAt(0); // mantém últimos 10 registros
+  }
+
+  /// Priorização de acordo com o tipo de tráfego
+  Future<void> _prioritizeDevice(String deviceId, TrafficType type) async {
+    switch (type) {
+      case TrafficType.gaming:
+        await routerService.setHighPriority(deviceId);
+        notificationsService.show(
+          title: "Prioridade de Rede",
+          body: "Dispositivo $deviceId priorizado para jogos",
+        );
+        break;
+      case TrafficType.streaming:
+        await routerService.setMediumPriority(deviceId);
+        notificationsService.show(
+          title: "Prioridade de Rede",
+          body: "Dispositivo $deviceId priorizado para streaming",
+        );
+        break;
+      case TrafficType.browsing:
+      case TrafficType.unknown:
+        await routerService.setNormalPriority(deviceId);
+        break;
+    }
+  }
+
+  /// Integração com Dashboard para exibir status em tempo real
+  List<Map<String, dynamic>> getDashboardData() {
+    final devices = routerService.getCachedDevices();
+    return devices.map((d) {
+      final lastType = _usageHistory[d.id]?.last ?? TrafficType.unknown;
+      return {
+        "id": d.id,
+        "name": d.name,
+        "trafficType": lastType.toString().split('.').last,
+      };
+    }).toList();
+  }
+}
