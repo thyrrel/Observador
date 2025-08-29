@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/ia_network_service.dart';
-import '../services/router_service.dart';
 import '../models/device_model.dart';
-import '../models/device_traffic.dart';
 
 class DashboardPage extends StatefulWidget {
   final IANetworkService iaService;
@@ -21,12 +19,11 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     devices = widget.iaService.devices;
-    trafficUsage = {}; // Inicialização
+    trafficUsage = {};
     _fetchTraffic();
   }
 
   Future<void> _fetchTraffic() async {
-    // Atualiza o tráfego dos dispositivos (placeholder para futura integração)
     final updatedTraffic = await widget.iaService.fetchTraffic();
     setState(() {
       trafficUsage = updatedTraffic;
@@ -56,17 +53,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 title: Text('${device.name} (${device.type})'),
                 subtitle: Text('Uso: ${mbps.toStringAsFixed(2)} Mbps'),
-                trailing: device.isBlocked
-                    ? IconButton(
-                        icon: const Icon(Icons.lock_open),
-                        tooltip: "Desbloquear",
-                        onPressed: () => _toggleBlock(device),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.lock),
-                        tooltip: "Bloquear",
-                        onPressed: () => _toggleBlock(device),
-                      ),
+                trailing: IconButton(
+                  icon: Icon(
+                      device.isBlocked ? Icons.lock_open : Icons.lock),
+                  tooltip: device.isBlocked ? "Desbloquear" : "Bloquear",
+                  onPressed: () => _toggleBlock(device),
+                ),
               ),
             );
           },
