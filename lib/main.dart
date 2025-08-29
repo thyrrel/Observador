@@ -1,35 +1,43 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'package:provider/provider.dart';
 import 'services/router_service.dart';
+import 'services/ia_service.dart';
 import 'services/ia_network_service.dart';
+import 'screens/dashboard_screen.dart';
+import 'models/device_model.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicialização dos serviços
+  final routerService = RouterService();
+  final iaService = IAService(
+    voiceCallback: (msg) => print('IA: $msg'),
+    routerService: routerService,
+  );
+  final iaNetworkService = IANetworkService();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<RouterService>.value(value: routerService),
+        Provider<IAService>.value(value: iaService),
+        Provider<IANetworkService>.value(value: iaNetworkService),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  final RouterService routerService = RouterService();
-  late final IANetworkService iaService;
-
-  MyApp({super.key}) {
-    iaService = IANetworkService(
-      routerService: routerService,
-      voiceCallback: (msg) {
-        // Aqui pode ser TTS ou print simples
-        print("IA: $msg");
-      },
-    );
-  }
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Observador',
       theme: ThemeData.dark(),
-      home: HomeScreen(
-        routerService: routerService,
-        iaService: iaService,
-      ),
+      home: const DashboardScreen(),
     );
   }
 }
