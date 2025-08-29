@@ -3,144 +3,210 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// Modelo para armazenar credenciais padrão de roteadores
-class RouterCredentials {
-  final String ip;
-  final String username;
-  final String password;
-
-  RouterCredentials({required this.ip, required this.username, required this.password});
-}
-
-/// Enum para tipos de roteadores
-enum RouterType { Huawei, TPLink, Xiaomi, Asus }
-
-/// Modelo do roteador
-class Router {
-  final RouterType type;
-  final RouterCredentials credentials;
-
-  Router({required this.type, required this.credentials});
-}
-
-/// Serviço central para gerenciar múltiplos roteadores
 class RouterService {
-  final List<Router> routers;
+  // Armazena credenciais padrão em caso de reset
+  final Map<String, Map<String, String>> defaultCredentials = {
+    'Huawei': {'user': 'admin', 'pass': 'admin'},
+    'TPLink': {'user': 'admin', 'pass': 'admin'},
+    'Asus': {'user': 'admin', 'pass': 'admin'},
+    'Xiaomi': {'user': 'admin', 'pass': 'admin'},
+  };
 
-  RouterService({required this.routers});
+  // Exemplo de lista de roteadores configurados (IP + marca)
+  final List<Map<String, String>> routers = [
+    {'ip': '192.168.1.1', 'brand': 'Huawei'},
+    {'ip': '192.168.0.1', 'brand': 'TPLink'},
+    {'ip': '192.168.50.1', 'brand': 'Asus'},
+    {'ip': '192.168.31.1', 'brand': 'Xiaomi'},
+  ];
 
-  /// Conecta a todos os roteadores disponíveis
-  Future<void> connectAll() async {
+  // Obtém dispositivos conectados de um roteador específico
+  Future<List<DeviceModel>> getDevices({String? routerIp}) async {
+    List<DeviceModel> devices = [];
     for (var router in routers) {
-      await _connectRouter(router);
+      if (routerIp != null && router['ip'] != routerIp) continue;
+      List<DeviceModel> routerDevices = await _fetchDevices(router);
+      devices.addAll(routerDevices);
+    }
+    return devices;
+  }
+
+  Future<List<DeviceModel>> _fetchDevices(Map<String, String> router) async {
+    String ip = router['ip']!;
+    String brand = router['brand']!;
+    Map<String, String> creds = defaultCredentials[brand]!;
+
+    // Aqui cada marca pode ter API/endpoint diferente
+    try {
+      switch (brand) {
+        case 'Huawei':
+          return await _fetchHuawei(ip, creds['user']!, creds['pass']!);
+        case 'TPLink':
+          return await _fetchTPLink(ip, creds['user']!, creds['pass']!);
+        case 'Asus':
+          return await _fetchAsus(ip, creds['user']!, creds['pass']!);
+        case 'Xiaomi':
+          return await _fetchXiaomi(ip, creds['user']!, creds['pass']!);
+        default:
+          return [];
+      }
+    } catch (e) {
+      print('Erro ao obter dispositivos do $brand: $e');
+      return [];
     }
   }
 
-  /// Conecta e autentica um roteador
-  Future<void> _connectRouter(Router router) async {
-    switch (router.type) {
-      case RouterType.Huawei:
-        await _connectHuawei(router.credentials);
-        break;
-      case RouterType.TPLink:
-        await _connectTPLink(router.credentials);
-        break;
-      case RouterType.Xiaomi:
-        await _connectXiaomi(router.credentials);
-        break;
-      case RouterType.Asus:
-        await _connectAsus(router.credentials);
-        break;
+  // Métodos específicos de cada marca (tráfego real)
+  Future<List<DeviceModel>> _fetchHuawei(String ip, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/api/devices'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    return _parseDevices(response.body);
+  }
+
+  Future<List<DeviceModel>> _fetchTPLink(String ip, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/device_list'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    return _parseDevices(response.body);
+  }
+
+  Future<List<DeviceModel>> _fetchAsus(String ip, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/api/clients'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    return _parseDevices(response.body);
+  }
+
+  Future<List<DeviceModel>> _fetchXiaomi(String ip, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/lan/host'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    return _parseDevices(response.body);
+  }
+
+  // Parse genérico para todos
+  List<DeviceModel> _parseDevices(String body) {
+    var data = jsonDecode(body);
+    List<DeviceModel> devices = [];
+    for (var d in data['devices']) {
+      devices.add(DeviceModel(
+        ip: d['ip'],
+        mac: d['mac'],
+        manufacturer: d['manufacturer'] ?? 'Desconhecido',
+        type: d['type'] ?? 'Desconhecido',
+        name: d['name'] ?? d['mac'],
+      ));
+    }
+    return devices;
+  }
+
+  // Tráfego real por dispositivo
+  Future<double> getDeviceTraffic(String mac) async {
+    // Para simplificar: varrer todos roteadores e encontrar o dispositivo
+    for (var router in routers) {
+      try {
+        // Cada marca pode ter endpoint de tráfego diferente
+        String ip = router['ip']!;
+        String brand = router['brand']!;
+        Map<String, String> creds = defaultCredentials[brand]!;
+        switch (brand) {
+          case 'Huawei':
+            return await _getHuaweiTraffic(ip, mac, creds['user']!, creds['pass']!);
+          case 'TPLink':
+            return await _getTPLinkTraffic(ip, mac, creds['user']!, creds['pass']!);
+          case 'Asus':
+            return await _getAsusTraffic(ip, mac, creds['user']!, creds['pass']!);
+          case 'Xiaomi':
+            return await _getXiaomiTraffic(ip, mac, creds['user']!, creds['pass']!);
+        }
+      } catch (_) {}
+    }
+    return 0.0;
+  }
+
+  Future<double> _getHuaweiTraffic(String ip, String mac, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/api/traffic?mac=$mac'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    var data = jsonDecode(response.body);
+    return (data['mbps'] ?? 0).toDouble();
+  }
+
+  Future<double> _getTPLinkTraffic(String ip, String mac, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/traffic?mac=$mac'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    var data = jsonDecode(response.body);
+    return (data['mbps'] ?? 0).toDouble();
+  }
+
+  Future<double> _getAsusTraffic(String ip, String mac, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/api/traffic?mac=$mac'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    var data = jsonDecode(response.body);
+    return (data['mbps'] ?? 0).toDouble();
+  }
+
+  Future<double> _getXiaomiTraffic(String ip, String mac, String user, String pass) async {
+    var response = await http.get(Uri.parse('http://$ip/lan/traffic?mac=$mac'), headers: {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$user:$pass'))}'
+    });
+    var data = jsonDecode(response.body);
+    return (data['mbps'] ?? 0).toDouble();
+  }
+
+  // Bloquear dispositivo
+  Future<void> blockDevice(String mac) async {
+    for (var router in routers) {
+      String ip = router['ip']!;
+      String brand = router['brand']!;
+      Map<String, String> creds = defaultCredentials[brand]!;
+      await http.post(Uri.parse('http://$ip/block_device'), headers: {
+        'Authorization': 'Basic ${base64Encode(utf8.encode('${creds['user']}:${creds['pass']}'))}'
+      }, body: {'mac': mac});
     }
   }
 
-  /// ========================= HUAWEI =========================
-  Future<void> _connectHuawei(RouterCredentials cred) async {
-    // Aqui você faria login via HTTP API específica da Huawei
-    // Exemplo: POST http://<IP>/api/user/login
-    print('Conectando Huawei: ${cred.ip}');
-    // Código real de autenticação aqui
+  // Limitar dispositivo
+  Future<void> limitDevice(String mac, double mbps) async {
+    for (var router in routers) {
+      String ip = router['ip']!;
+      String brand = router['brand']!;
+      Map<String, String> creds = defaultCredentials[brand]!;
+      await http.post(Uri.parse('http://$ip/limit_device'), headers: {
+        'Authorization': 'Basic ${base64Encode(utf8.encode('${creds['user']}:${creds['pass']}'))}'
+      }, body: {'mac': mac, 'limit': mbps.toString()});
+    }
   }
 
-  Future<void> prioritizeDeviceHuawei(String mac, {int priority = 100}) async {
-    // Aplicar QoS em dispositivo específico
-    print('Huawei: Priorizar $mac com prioridade $priority');
-    // Implementar API real de QoS da Huawei
-  }
-
-  /// ========================= TP-LINK =========================
-  Future<void> _connectTPLink(RouterCredentials cred) async {
-    print('Conectando TP-Link: ${cred.ip}');
-    // Login via API web do TP-Link
-  }
-
-  Future<void> prioritizeDeviceTPLink(String mac, {int priority = 100}) async {
-    print('TP-Link: Priorizar $mac com prioridade $priority');
-  }
-
-  /// ========================= XIAOMI =========================
-  Future<void> _connectXiaomi(RouterCredentials cred) async {
-    print('Conectando Xiaomi: ${cred.ip}');
-    // Login via HTTP API Xiaomi
-  }
-
-  Future<void> prioritizeDeviceXiaomi(String mac, {int priority = 100}) async {
-    print('Xiaomi: Priorizar $mac com prioridade $priority');
-  }
-
-  /// ========================= ASUS =========================
-  Future<void> _connectAsus(RouterCredentials cred) async {
-    print('Conectando Asus: ${cred.ip}');
-    // Login via API HTTP Asus
-  }
-
-  Future<void> prioritizeDeviceAsus(String mac, {int priority = 100}) async {
-    print('Asus: Priorizar $mac com prioridade $priority');
-  }
-
-  /// ========================= MÉTODOS GENÉRICOS =========================
+  // Priorizar dispositivo
   Future<void> prioritizeDevice(String mac, {int priority = 100}) async {
     for (var router in routers) {
-      switch (router.type) {
-        case RouterType.Huawei:
-          await prioritizeDeviceHuawei(mac, priority: priority);
-          break;
-        case RouterType.TPLink:
-          await prioritizeDeviceTPLink(mac, priority: priority);
-          break;
-        case RouterType.Xiaomi:
-          await prioritizeDeviceXiaomi(mac, priority: priority);
-          break;
-        case RouterType.Asus:
-          await prioritizeDeviceAsus(mac, priority: priority);
-          break;
-      }
+      String ip = router['ip']!;
+      String brand = router['brand']!;
+      Map<String, String> creds = defaultCredentials[brand]!;
+      await http.post(Uri.parse('http://$ip/prioritize_device'), headers: {
+        'Authorization': 'Basic ${base64Encode(utf8.encode('${creds['user']}:${creds['pass']}'))}'
+      }, body: {'mac': mac, 'priority': priority.toString()});
     }
-  }
-
-  Future<void> blockDevice(String mac) async {
-    print('Bloquear dispositivo $mac em todos os roteadores');
-    // Implementar para cada roteador
-  }
-
-  Future<void> limitDevice(String mac, double mbps) async {
-    print('Limitar dispositivo $mac a $mbps Mbps em todos os roteadores');
-    // Implementar para cada roteador
   }
 }
 
-/// Exemplo de roteadores padrão
-final List<Router> defaultRouters = [
-  Router(
-      type: RouterType.Huawei,
-      credentials: RouterCredentials(ip: '192.168.1.1', username: 'admin', password: 'admin')),
-  Router(
-      type: RouterType.TPLink,
-      credentials: RouterCredentials(ip: '192.168.0.1', username: 'admin', password: 'admin')),
-  Router(
-      type: RouterType.Xiaomi,
-      credentials: RouterCredentials(ip: '192.168.31.1', username: 'admin', password: 'admin')),
-  Router(
-      type: RouterType.Asus,
-      credentials: RouterCredentials(ip: '192.168.50.1', username: 'admin', password: 'admin')),
-];
+// Modelo simplificado para integração
+class DeviceModel {
+  final String ip;
+  final String mac;
+  final String manufacturer;
+  final String type;
+  final String name;
+
+  DeviceModel({
+    required this.ip,
+    required this.mac,
+    required this.manufacturer,
+    required this.type,
+    required this.name,
+  });
+}
