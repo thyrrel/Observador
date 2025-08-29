@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
-/// Estrutura base para armazenar credenciais e IP do roteador
+/// Estrutura base do roteador
 class Router {
   final String brand;
   final String ip;
@@ -16,7 +17,7 @@ class Router {
   });
 }
 
-/// Serviço principal para gerenciar múltiplos roteadores
+/// Serviço para gerenciar múltiplos roteadores e automação
 class RouterService {
   final List<Router> routers = [];
 
@@ -37,7 +38,30 @@ class RouterService {
     ]);
   }
 
-  /// Conecta ao roteador e retorna se a autenticação foi bem-sucedida
+  /// Detecta dispositivos conectados na rede local
+  Future<List<String>> scanNetwork(String subnet) async {
+    List<String> activeIPs = [];
+    for (int i = 1; i < 255; i++) {
+      final ip = '$subnet.$i';
+      try {
+        final result = await Process.run('ping', ['-c', '1', '-W', '1', ip]);
+        if (result.exitCode == 0) {
+          activeIPs.add(ip);
+        }
+      } catch (_) {}
+    }
+    return activeIPs;
+  }
+
+  /// Conecta a todos os roteadores automaticamente usando credenciais padrão
+  Future<void> connectAll() async {
+    for (var router in routers) {
+      bool success = await connect(router);
+      print('${router.brand} (${router.ip}) conectado: $success');
+    }
+  }
+
+  /// Conexão individual
   Future<bool> connect(Router router) async {
     try {
       final response = await http.post(
@@ -51,7 +75,7 @@ class RouterService {
     }
   }
 
-  /// Bloqueia um dispositivo pelo IP
+  /// Bloqueio de dispositivo pelo IP
   Future<bool> blockIP(Router router, String ipToBlock) async {
     try {
       final response = await http.post(
@@ -65,7 +89,7 @@ class RouterService {
     }
   }
 
-  /// Limita a velocidade de um dispositivo pelo IP
+  /// Limita a velocidade de um dispositivo
   Future<bool> limitIP(Router router, String ipToLimit, int maxMbps) async {
     try {
       final response = await http.post(
@@ -79,7 +103,7 @@ class RouterService {
     }
   }
 
-  /// Ajusta prioridade de tráfego para um dispositivo
+  /// Prioridade de tráfego
   Future<bool> setHighPriority(Router router, String ip) async {
     try {
       final response = await http.post(
@@ -93,7 +117,7 @@ class RouterService {
     }
   }
 
-  /// Método genérico para executar comandos específicos do roteador
+  /// Envio de comando genérico
   Future<bool> sendCommand(Router router, String endpoint, Map<String, String> params) async {
     try {
       final response = await http.post(
@@ -107,17 +131,17 @@ class RouterService {
     }
   }
 
-  /// Retorna o roteador pelo IP ou marca
+  /// Atualiza credenciais
+  void updateCredentials(Router router, String username, String password) {
+    router.username = username;
+    router.password = password;
+  }
+
+  /// Retorna roteador por IP ou marca
   Router? getRouter({String? ip, String? brand}) {
     return routers.firstWhere(
       (r) => (ip != null && r.ip == ip) || (brand != null && r.brand == brand),
       orElse: () => null,
     );
-  }
-
-  /// Atualiza credenciais do roteador
-  void updateCredentials(Router router, String username, String password) {
-    router.username = username;
-    router.password = password;
   }
 }
