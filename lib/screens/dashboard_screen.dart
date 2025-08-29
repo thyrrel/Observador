@@ -20,6 +20,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  // Lista de dispositivos permitidos
+  final List<String> allowedIPs = [
+    '192.168.1.2', // Exemplo de IP permitido
+    '192.168.1.3',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -76,7 +82,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       for (var ip in added) {
         _showNotification('Novo Dispositivo', 'Dispositivo $ip conectado');
+
+        // Ação automática: Bloquear se não permitido
+        if (!allowedIPs.contains(ip)) {
+          await widget.routerService.blockIP(ip);
+          _showNotification('Bloqueado', 'Dispositivo $ip não autorizado foi bloqueado');
+        } else {
+          // Prioridade alta para IP permitido
+          await widget.routerService.setHighPriority(ip);
+        }
       }
+
       for (var ip in removed) {
         _showNotification('Dispositivo Removido', 'Dispositivo $ip desconectado');
       }
@@ -97,4 +113,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: ListView.builder(
               itemCount: activeIPs.length,
               itemBuilder: (context, index) {
-                final ip
+                final ip = activeIPs[index];
+                final allowed = allowedIPs.contains(ip);
+                return ListTile(
+                  title: Text(ip),
+                  subtitle: Text(allowed ? 'Permitido' : 'Bloqueado/Desconhecido'),
+                  trailing: Icon(
+                    allowed ? Icons.check_circle : Icons.block,
+                    color: allowed ? Colors.green : Colors.red,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
