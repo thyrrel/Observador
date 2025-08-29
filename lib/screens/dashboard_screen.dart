@@ -8,13 +8,11 @@ import '../models/device_model.dart';
 class DashboardScreen extends StatefulWidget {
   final RouterService routerService;
   final IAService iaService;
-  final List<DeviceModel> devices;
 
   const DashboardScreen({
     Key? key,
     required this.routerService,
     required this.iaService,
-    required this.devices,
   }) : super(key: key);
 
   @override
@@ -22,6 +20,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  List<DeviceModel> devices = [];
   Map<String, double> deviceUsage = {};
 
   @override
@@ -30,39 +29,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _initDevices();
   }
 
-  void _initDevices() {
-    // Inicializa o tráfego simulado
-    for (var d in widget.devices) {
-      deviceUsage[d.ip] = 5.0;
+  Future<void> _initDevices() async {
+    // Obtém os dispositivos reais do RouterService
+    devices = await widget.routerService.getDevices();
+    for (var d in devices) {
+      deviceUsage[d.ip] = 0;
     }
-    // Envia os dispositivos para a IA analisar
-    widget.iaService.analyzeDevices(widget.devices);
-    widget.iaService.analyzeTraffic(widget.devices, deviceUsage);
+    _updateTraffic();
+    // IA analisa dispositivos
+    widget.iaService.analyzeDevices(devices);
   }
 
-  void _updateUsage(String ip, double mbps) {
-    setState(() {
-      deviceUsage[ip] = mbps;
-    });
-    widget.iaService.analyzeTraffic(widget.devices, deviceUsage);
+  Future<void> _updateTraffic() async {
+    for (var d in devices) {
+      double mbps = await widget.routerService.getDeviceTraffic(d.mac);
+      deviceUsage[d.ip] = mbps;
+    }
+    // IA analisa o tráfego real e sugere ações
+    widget.iaService.analyzeTraffic(devices, deviceUsage);
+    setState(() {});
+    // Atualiza continuamente a cada 5 segundos
+    Future.delayed(const Duration(seconds: 5), _updateTraffic);
   }
 
   void _prioritizeDevice(DeviceModel device) async {
     await widget.routerService.prioritizeDevice(device.mac, priority: 200);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('Prioridade aplicada a ${device.name}')));
   }
 
   void _blockDevice(DeviceModel device) async {
     await widget.routerService.blockDevice(device.mac);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('${device.name} bloqueado')));
   }
 
-  void _limitDevice(DeviceModel device) async {
-    await widget.routerService.limitDevice(device.mac, 10.0);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('${device.name} limitado a 10 Mbps')));
+  void _limitDevice(DeviceModel device, double limitMbps) async {
+    await widget.routerService.limitDevice(device.mac, limitMbps);
   }
 
   @override
@@ -70,9 +69,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard de Rede')),
       body: ListView.builder(
-        itemCount: widget.devices.length,
+        itemCount: devices.length,
         itemBuilder: (context, index) {
-          var device = widget.devices[index];
+          var device = devices[index];
           double usage = deviceUsage[device.ip] ?? 0;
           return Card(
             margin: const EdgeInsets.all(8),
@@ -89,14 +88,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _blockDevice(device);
                       break;
                     case 'Limitar':
-                      _limitDevice(device);
+                      _limitDevice(device, 10.0);
                       break;
                   }
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'Priorizar', child: Text('Priorizar')),
                   const PopupMenuItem(value: 'Bloquear', child: Text('Bloquear')),
-                  const PopupMenuItem(value: 'Limitar', child: Text('Limitar')),
+                  const PopupMenuItem(value: 'Limitar', child: Text('Limitar 10 Mbps')),
                 ],
               ),
             ),
