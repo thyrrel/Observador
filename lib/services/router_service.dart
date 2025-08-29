@@ -1,117 +1,123 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
+/// Estrutura base para armazenar credenciais e IP do roteador
+class Router {
+  final String brand;
+  final String ip;
+  String username;
+  String password;
+
+  Router({
+    required this.brand,
+    required this.ip,
+    required this.username,
+    required this.password,
+  });
+}
+
+/// Serviço principal para gerenciar múltiplos roteadores
 class RouterService {
-  // Credenciais padrão para cada marca
-  final Map<String, String> defaultCredentials = {
-    'huawei': 'admin:admin',
-    'tplink': 'admin:admin',
-    'xiaomi': 'admin:admin',
-    'asus': 'admin:admin',
-  };
+  final List<Router> routers = [];
 
-  // Salvar credenciais localmente
-  Future<void> saveCredentials(String brand, String username, String password) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$brand-username', username);
-    await prefs.setString('$brand-password', password);
+  RouterService() {
+    _loadDefaultRouters();
   }
 
-  // Carregar credenciais salvas
-  Future<Map<String, String>?> loadCredentials(String brand) async {
-    final prefs = await SharedPreferences.getInstance();
-    final username = prefs.getString('$brand-username');
-    final password = prefs.getString('$brand-password');
-    if (username != null && password != null) {
-      return {'username': username, 'password': password};
-    }
-    return null;
+  void _loadDefaultRouters() {
+    routers.addAll([
+      Router(brand: 'Huawei', ip: '192.168.3.1', username: 'admin', password: 'admin'),
+      Router(brand: 'TP-Link', ip: '192.168.0.1', username: 'admin', password: 'admin'),
+      Router(brand: 'Xiaomi', ip: '192.168.31.1', username: 'admin', password: 'admin'),
+      Router(brand: 'Asus', ip: '192.168.1.1', username: 'admin', password: 'admin'),
+      Router(brand: 'D-Link', ip: '192.168.0.1', username: 'admin', password: 'admin'),
+      Router(brand: 'Netgear', ip: '192.168.1.1', username: 'admin', password: 'password'),
+      Router(brand: 'Mercusys', ip: '192.168.1.1', username: 'admin', password: 'admin'),
+      Router(brand: 'Tenda', ip: '192.168.0.1', username: 'admin', password: 'admin'),
+    ]);
   }
 
-  // Conectar roteador (tenta credenciais salvas ou padrão)
-  Future<bool> connectRouter(String brand, String ip) async {
-    Map<String, String>? creds = await loadCredentials(brand);
-    if (creds == null) {
-      final defaultCred = defaultCredentials[brand]!.split(':');
-      creds = {'username': defaultCred[0], 'password': defaultCred[1]};
-    }
-
-    final url = Uri.parse('http://$ip/login');
-    final response = await http.post(
-      url,
-      body: {
-        'username': creds['username']!,
-        'password': creds['password']!,
-      },
-    );
-
-    if (response.statusCode == 200) {
-      await saveCredentials(brand, creds['username']!, creds['password']!);
-      return true;
-    } else {
+  /// Conecta ao roteador e retorna se a autenticação foi bem-sucedida
+  Future<bool> connect(Router router) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://${router.ip}/login'),
+        body: {'username': router.username, 'password': router.password},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro ao conectar no ${router.brand}: $e');
       return false;
     }
   }
 
-  // Bloquear IP (genérico)
-  Future<bool> blockIP(String brand, String ip, String targetIP) async {
-    final creds = await loadCredentials(brand);
-    if (creds == null) return false;
-
-    final url = Uri.parse('http://$ip/block');
-    final response = await http.post(
-      url,
-      body: {
-        'username': creds['username']!,
-        'password': creds['password']!,
-        'targetIP': targetIP,
-      },
-    );
-
-    return response.statusCode == 200;
+  /// Bloqueia um dispositivo pelo IP
+  Future<bool> blockIP(Router router, String ipToBlock) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://${router.ip}/block_ip'),
+        body: {'ip': ipToBlock},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro ao bloquear IP no ${router.brand}: $e');
+      return false;
+    }
   }
 
-  // Limitar velocidade de IP (genérico)
-  Future<bool> limitIP(String brand, String ip, String targetIP, int speedKb) async {
-    final creds = await loadCredentials(brand);
-    if (creds == null) return false;
-
-    final url = Uri.parse('http://$ip/limit');
-    final response = await http.post(
-      url,
-      body: {
-        'username': creds['username']!,
-        'password': creds['password']!,
-        'targetIP': targetIP,
-        'speed': speedKb.toString(),
-      },
-    );
-
-    return response.statusCode == 200;
+  /// Limita a velocidade de um dispositivo pelo IP
+  Future<bool> limitIP(Router router, String ipToLimit, int maxMbps) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://${router.ip}/limit_ip'),
+        body: {'ip': ipToLimit, 'speed': maxMbps.toString()},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro ao limitar IP no ${router.brand}: $e');
+      return false;
+    }
   }
 
-  // Métodos específicos por marca (exemplo Huawei)
-  Future<bool> connectHuawei(String ip) async => connectRouter('huawei', ip);
-  Future<bool> blockHuaweiIP(String ip, String targetIP) async => blockIP('huawei', ip, targetIP);
-  Future<bool> limitHuaweiIP(String ip, String targetIP, int speedKb) async =>
-      limitIP('huawei', ip, targetIP, speedKb);
+  /// Ajusta prioridade de tráfego para um dispositivo
+  Future<bool> setHighPriority(Router router, String ip) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://${router.ip}/priority'),
+        body: {'ip': ip, 'priority': 'high'},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro ao definir prioridade no ${router.brand}: $e');
+      return false;
+    }
+  }
 
-  // Métodos TP-Link
-  Future<bool> connectTPLink(String ip) async => connectRouter('tplink', ip);
-  Future<bool> blockTPLinkIP(String ip, String targetIP) async => blockIP('tplink', ip, targetIP);
-  Future<bool> limitTPLinkIP(String ip, String targetIP, int speedKb) async =>
-      limitIP('tplink', ip, targetIP, speedKb);
+  /// Método genérico para executar comandos específicos do roteador
+  Future<bool> sendCommand(Router router, String endpoint, Map<String, String> params) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://${router.ip}/$endpoint'),
+        body: params,
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro ao enviar comando no ${router.brand}: $e');
+      return false;
+    }
+  }
 
-  // Métodos Xiaomi
-  Future<bool> connectXiaomi(String ip) async => connectRouter('xiaomi', ip);
-  Future<bool> blockXiaomiIP(String ip, String targetIP) async => blockIP('xiaomi', ip, targetIP);
-  Future<bool> limitXiaomiIP(String ip, String targetIP, int speedKb) async =>
-      limitIP('xiaomi', ip, targetIP, speedKb);
+  /// Retorna o roteador pelo IP ou marca
+  Router? getRouter({String? ip, String? brand}) {
+    return routers.firstWhere(
+      (r) => (ip != null && r.ip == ip) || (brand != null && r.brand == brand),
+      orElse: () => null,
+    );
+  }
 
-  // Métodos Asus
-  Future<bool> connectAsus(String ip) async => connectRouter('asus', ip);
-  Future<bool> blockAsusIP(String ip, String targetIP) async => blockIP('asus', ip, targetIP);
-  Future<bool> limitAsusIP(String ip, String targetIP, int speedKb) async =>
-      limitIP('asus', ip, targetIP, speedKb);
+  /// Atualiza credenciais do roteador
+  void updateCredentials(Router router, String username, String password) {
+    router.username = username;
+    router.password = password;
+  }
 }
