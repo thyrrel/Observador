@@ -1,35 +1,25 @@
+// lib/models/network_device.dart
+import 'device_model.dart';
+import 'device_traffic.dart';
+
 class NetworkDevice {
-  final int? id;
-  final String name;
-  final String ip;
-  final String mac;
-  final bool blocked;
+  final RouterDevice device;
+  final List<DeviceTraffic> trafficHistory;
 
   NetworkDevice({
-    this.id,
-    required this.name,
-    required this.ip,
-    required this.mac,
-    this.blocked = false,
-  });
+    required this.device,
+    List<DeviceTraffic>? trafficHistory,
+  }) : trafficHistory = trafficHistory ?? [];
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'ip': ip,
-      'mac': mac,
-      'blocked': blocked ? 1 : 0,
-    };
+  /// Bytes totais transferidos
+  int get totalRx => trafficHistory.fold(0, (sum, t) => sum + t.rxBytes);
+  int get totalTx => trafficHistory.fold(0, (sum, t) => sum + t.txBytes);
+
+  /// Adiciona registro diário de tráfego
+  void addTraffic(DeviceTraffic t) {
+    trafficHistory.add(t);
   }
 
-  factory NetworkDevice.fromMap(Map<String, dynamic> map) {
-    return NetworkDevice(
-      id: map['id'],
-      name: map['name'],
-      ip: map['ip'],
-      mac: map['mac'],
-      blocked: map['blocked'] == 1,
-    );
-  }
+  /// Retorna se o dispositivo está bloqueado
+  bool get isBlocked => device.blocked;
 }
