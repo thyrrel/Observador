@@ -1,104 +1,79 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import '../models/device_model.dart';
 import '../services/ia_service.dart';
 import '../services/router_service.dart';
+import '../models/device_model.dart';
+import 'package:hive/hive.dart';
 
-class DashboardScreen extends StatefulWidget {
+class HomeScreen extends StatefulWidget {
   final IAService iaService;
   final RouterService routerService;
 
-  const DashboardScreen({required this.iaService, required this.routerService, Key? key}) : super(key: key);
+  const HomeScreen({required this.iaService, required this.routerService, Key? key}) : super(key: key);
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  late Box<DeviceModel> deviceBox;
+class _HomeScreenState extends State<HomeScreen> {
   List<DeviceModel> devices = [];
+  late Box deviceBox;
 
   @override
   void initState() {
     super.initState();
-    deviceBox = Hive.box<DeviceModel>('devices');
-    devices = deviceBox.values.toList();
-    _listenTraffic();
+    _initHive();
   }
 
-  void _listenTraffic() {
-    // Atualização contínua simulando tráfego real (substituir por dados reais)
-    Future.delayed(Duration(seconds: 5), () {
-      setState(() {
-        devices = deviceBox.values.toList();
-        widget.iaService.analyzeTraffic(devices, _getTrafficMap());
-      });
-      _listenTraffic();
+  void _initHive() async {
+    deviceBox = await Hive.openBox('devices');
+    _loadDevices();
+  }
+
+  void _loadDevices() {
+    List stored = deviceBox.values.toList();
+    setState(() {
+      devices = stored.isNotEmpty ? stored.cast<DeviceModel>() : [];
+    });
+    widget.iaService.analyzeDevices(devices);
+  }
+
+  void _updateDeviceName(DeviceModel device, String newName) {
+    setState(() {
+      device.name = newName;
+      deviceBox.put(device.mac, device);
     });
   }
 
-  Map<String, double> _getTrafficMap() {
-    Map<String, double> usage = {};
-    for (var d in devices) {
-      usage[d.ip] = (d.traffic ?? 0) + (5 + (devices.indexOf(d) * 3)); // exemplo
-    }
-    return usage;
-  }
-
-  void _editDevice(DeviceModel device) async {
-    TextEditingController nameController = TextEditingController(text: device.name);
-    TextEditingController typeController = TextEditingController(text: device.type);
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar dispositivo'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nome')),
-            TextField(controller: typeController, decoration: const InputDecoration(labelText: 'Tipo')),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () {
-                device.name = nameController.text;
-                device.type = typeController.text;
-                device.save();
-                Navigator.pop(context);
-                setState(() {});
-              },
-              child: const Text('Salvar')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeviceTile(DeviceModel device) {
-    double traffic = device.traffic ?? 0;
-    return ListTile(
-      title: Text(device.name),
-      subtitle: Text('${device.type} • IP: ${device.ip} • Tráfego: ${traffic.toStringAsFixed(1)} Mbps'),
-      trailing: IconButton(
-        icon: const Icon(Icons.edit),
-        onPressed: () => _editDevice(device),
-      ),
-    );
+  void _updateTraffic(Map<String, double> usage) {
+    widget.iaService.analyzeTraffic(devices, usage);
   }
 
   @override
   Widget build(BuildContext context) {
-    devices = deviceBox.values.toList();
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard de Dispositivos')),
+      appBar: AppBar(
+        title: Text('Dashboard'),
+      ),
       body: ListView.builder(
         itemCount: devices.length,
-        itemBuilder: (context, index) => _buildDeviceTile(devices[index]),
+        itemBuilder: (context, index) {
+          final device = devices[index];
+          return ListTile(
+            title: TextField(
+              controller: TextEditingController(text: device.name),
+              decoration: InputDecoration(labelText: 'Nome do dispositivo'),
+              onSubmitted: (value) => _updateDeviceName(device, value),
+            ),
+            subtitle: Text('${device.type} - ${device.ip}'),
+            trailing: IconButton(
+              icon: Icon(Icons.speed),
+              onPressed: () {
+                // Priorizar dispositivo via RouterService
+                widget.routerService.prioritizeDevice(device.mac, priority: 200);
+              },
+            ),
+          );
+        },
       ),
     );
   }
