@@ -1,45 +1,37 @@
-// lib/pages/network_control_page.dart
 import 'package:flutter/material.dart';
 import '../services/router_service.dart';
+import '../services/ia_network_service.dart';
+import '../models/device_model.dart';
 
-class NetworkControlPage extends StatefulWidget {
-  const NetworkControlPage({Key? key}) : super(key: key);
+class NetworkControlPage extends StatelessWidget {
+  final RouterService routerService;
+  final IANetworkService iaService;
 
-  @override
-  _NetworkControlPageState createState() => _NetworkControlPageState();
-}
-
-class _NetworkControlPageState extends State<NetworkControlPage> {
-  final RouterService _routerService = RouterService();
-  bool _loading = true;
-  List<Map<String, dynamic>> _devices = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDevices();
-  }
-
-  Future<void> _loadDevices() async {
-    setState(() => _loading = true);
-    _devices = await _routerService.getConnectedDevices();
-    setState(() => _loading = false);
-  }
+  NetworkControlPage({required this.routerService, required this.iaService});
 
   @override
   Widget build(BuildContext context) {
+    var devices = iaService.devices;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Controle de Rede')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _devices.length,
-              itemBuilder: (context, index) {
-                final device = _devices[index];
-                return Card(
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(device['name'] ?? 'Desconhecido'),
-                    subtitle: Text(device['ip'] ?? ''),
-                    trailing: Row(
-                      mainAxis
+      appBar: AppBar(title: Text("Controle de Rede")),
+      body: ListView.builder(
+        itemCount: devices.length,
+        itemBuilder: (context, index) {
+          var device = devices[index];
+          return ListTile(
+            title: Text('${device.name} (${device.type})'),
+            subtitle: Text('MAC: ${device.mac}'),
+            trailing: IconButton(
+              icon: Icon(Icons.priority_high),
+              onPressed: () {
+                routerService.prioritizeDevice(device.mac, priority: 200);
+                iaService.notify('Prioridade aplicada a ${device.name}');
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
