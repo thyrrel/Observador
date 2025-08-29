@@ -6,6 +6,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'router_adapter.dart';
+import 'package:html/parser.dart' as html_parser;
 
 class DLinkAdapter implements RouterAdapter {
   DLinkAdapter();
@@ -16,10 +17,12 @@ class DLinkAdapter implements RouterAdapter {
     // 1) Tentar login via form (common in older D-Link)
     try {
       final formUri = Uri.parse('http://$ip/login.cgi');
-      final formResp = await http.post(
-        formUri,
-        body: {'username': username, 'password': password},
-      ).timeout(const Duration(seconds: 6));
+      final formResp = await http
+          .post(
+            formUri,
+            body: {'username': username, 'password': password},
+          )
+          .timeout(const Duration(seconds: 6));
 
       if (formResp.statusCode == 200 || formResp.statusCode == 302) {
         final setCookie = formResp.headers['set-cookie'];
@@ -32,29 +35,38 @@ class DLinkAdapter implements RouterAdapter {
           }
         } catch (_) {}
       }
-    } catch (_) {}
+    } catch (e) {
+      print('DLink Form login failed: $e');
+    }
 
     // 2) Tentar Basic Auth
     try {
       final uri = Uri.parse('http://$ip/');
       final basicAuth = 'Basic ${base64Encode(utf8.encode('$username:$password'))}';
-      final resp = await http.get(uri, headers: {'Authorization': basicAuth}).timeout(const Duration(seconds: 5));
+      final resp = await http
+          .get(uri, headers: {'Authorization': basicAuth})
+          .timeout(const Duration(seconds: 5));
       if (resp.statusCode == 200) return basicAuth;
-    } catch (_) {}
+    } catch (e) {
+      print('DLink Basic Auth failed: $e');
+    }
 
     // 3) Tentar token via API (alguns modelos usam /api/login or /cgi-bin)
     try {
       final apiUri = Uri.parse('http://$ip/api/login');
-      final resp = await http.post(apiUri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({
-        'username': username,
-        'password': password,
-      })).timeout(const Duration(seconds: 6));
+      final resp = await http
+          .post(apiUri,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'username': username, 'password': password}))
+          .timeout(const Duration(seconds: 6));
 
       if (resp.statusCode == 200) {
         final parsed = jsonDecode(resp.body);
         if (parsed is Map && parsed.containsKey('token')) return parsed['token'].toString();
       }
-    } catch (_) {}
+    } catch (e) {
+      print('DLink API token login failed: $e');
+    }
 
     // Falha
     return null;
@@ -64,10 +76,10 @@ class DLinkAdapter implements RouterAdapter {
   @override
   Future<List<RouterDevice>> getClients(String ip, String token) async {
     final endpoints = [
-      'http://$ip/api/clients', // JSON API
-      'http://$ip/clients.cgi', // CGI list
-      'http://$ip/userRpm/HostRpm.htm', // página com HTML (ex.: router web)
-      'http://$ip/api/dhcp/clients', // possível caminho alternativo
+      'http://$ip/api/clients',
+      'http://$ip/clients.cgi',
+      'http://$ip/userRpm/HostRpm.htm',
+      'http://$ip/api/dhcp/clients',
     ];
 
     for (final ep in endpoints) {
@@ -98,16 +110,14 @@ class DLinkAdapter implements RouterAdapter {
             }).toList();
           }
         } catch (_) {
-          // Se não foi JSON, tentar parse básico de HTML (fallback)
           final htmlDevices = _parseClientsFromHtml(resp.body);
           if (htmlDevices.isNotEmpty) return htmlDevices;
         }
-      } catch (_) {
-        // Ignorar e tentar próximo endpoint
+      } catch (e) {
+        print('DLink getClients endpoint failed ($ep): $e');
       }
     }
 
-    // Se não encontrou nada, retorna vazio
     return [];
   }
 
@@ -118,7 +128,7 @@ class DLinkAdapter implements RouterAdapter {
       'http://$ip/api/block_client',
       'http://$ip/block.cgi',
       'http://$ip/userRpm/AccessControlRpm.htm?mac=$mac&block=1',
-      'http://$ip/api/clients/block', // alternativa
+      'http://$ip/api/clients/block',
     ];
 
     for (final ep in endpoints) {
@@ -132,7 +142,9 @@ class DLinkAdapter implements RouterAdapter {
         final body = jsonEncode({'mac': mac});
         final resp = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 6));
         if (resp.statusCode == 200 || resp.statusCode == 204) return true;
-      } catch (_) {}
+      } catch (e) {
+        print('DLink blockDevice endpoint failed ($ep): $e');
+      }
     }
 
     return false;
@@ -158,7 +170,9 @@ class DLinkAdapter implements RouterAdapter {
         final body = jsonEncode({'mac': mac, 'limit_kbps': limit});
         final resp = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 6));
         if (resp.statusCode == 200 || resp.statusCode == 204) return true;
-      } catch (_) {}
+      } catch (e) {
+        print('DLink limitDevice endpoint failed ($ep): $e');
+      }
     }
 
     return false;
@@ -187,13 +201,15 @@ class DLinkAdapter implements RouterAdapter {
   }
 
   static List<RouterDevice> _parseClientsFromHtml(String html) {
-    // Parser HTML simples: procura por padrões de MAC e IP.
-    // NÃO é perfeito; ideal é adaptar ao HTML específico do seu modelo.
     final List<RouterDevice> devices = [];
     final macRegex = RegExp(r'([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})');
     final ipRegex = RegExp(r'(\d{1,3}\.){3}\d{1,3}');
-    final lines = html.split('\n');
-    for (var line in lines) {
+    final document = html_parser.parse(html);
+
+    // busca linhas de tabelas ou listas comuns
+    final rows = document.querySelectorAll('tr, li, div');
+    for (var row in rows) {
+      final line = row.text;
       final macMatch = macRegex.firstMatch(line);
       if (macMatch != null) {
         final mac = macMatch.group(0) ?? '';
@@ -207,6 +223,9 @@ class DLinkAdapter implements RouterAdapter {
   }
 
   static String _extractNameFromHtmlLine(String line) {
-    // tentativa simples de extrair hostname de uma linha de HTML
     final titleRegex = RegExp(r'>([^<>]{2,60})<');
-    final m =
+    final match = titleRegex.firstMatch(line);
+    if (match != null) return match.group(1)?.trim() ?? '';
+    return 'Unknown';
+  }
+}
