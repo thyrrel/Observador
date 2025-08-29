@@ -2,14 +2,20 @@
 
 import 'package:flutter/material.dart';
 import '../services/router_service.dart';
+import '../services/ia_service.dart';
 import '../models/device_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   final RouterService routerService;
+  final IAService iaService;
   final List<DeviceModel> devices;
 
-  const DashboardScreen({Key? key, required this.routerService, required this.devices})
-      : super(key: key);
+  const DashboardScreen({
+    Key? key,
+    required this.routerService,
+    required this.iaService,
+    required this.devices,
+  }) : super(key: key);
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -21,31 +27,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _simulateUsage(); // Simulação inicial (substituir por dados reais)
+    _initDevices();
   }
 
-  void _simulateUsage() {
+  void _initDevices() {
+    // Inicializa o tráfego simulado
     for (var d in widget.devices) {
-      deviceUsage[d.ip] = 5.0; // 5 Mbps inicial
+      deviceUsage[d.ip] = 5.0;
     }
+    // Envia os dispositivos para a IA analisar
+    widget.iaService.analyzeDevices(widget.devices);
+    widget.iaService.analyzeTraffic(widget.devices, deviceUsage);
+  }
+
+  void _updateUsage(String ip, double mbps) {
+    setState(() {
+      deviceUsage[ip] = mbps;
+    });
+    widget.iaService.analyzeTraffic(widget.devices, deviceUsage);
   }
 
   void _prioritizeDevice(DeviceModel device) async {
     await widget.routerService.prioritizeDevice(device.mac, priority: 200);
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Prioridade aplicada a ${device.name}')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Prioridade aplicada a ${device.name}')));
   }
 
   void _blockDevice(DeviceModel device) async {
     await widget.routerService.blockDevice(device.mac);
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${device.name} bloqueado')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('${device.name} bloqueado')));
   }
 
   void _limitDevice(DeviceModel device) async {
     await widget.routerService.limitDevice(device.mac, 10.0);
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${device.name} limitado a 10 Mbps')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('${device.name} limitado a 10 Mbps')));
   }
 
   @override
@@ -87,3 +104,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
       ),
     );
+  }
+}
