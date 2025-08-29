@@ -1,4 +1,3 @@
-// lib/models/device_traffic.dart
 class DeviceTraffic {
   final String day;
   final int rxBytes; // Download
