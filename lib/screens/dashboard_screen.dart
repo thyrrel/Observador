@@ -1,57 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/router_service.dart';
-import '../services/ia_network_service.dart';
+import '../services/ia_service.dart';
+import '../models/device_model.dart';
 
-class DashboardScreen extends StatelessWidget {
-  final RouterService routerService;
-  final IANetworkService iaService;
-  final Map<String, double> deviceTraffic;
-
-  const DashboardScreen({
-    super.key,
-    required this.routerService,
-    required this.iaService,
-    required this.deviceTraffic,
-  });
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final devices = routerService.connectedDevices;
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
 
-    return ListView.builder(
-      itemCount: devices.length,
-      itemBuilder: (context, index) {
-        final d = devices[index];
-        final traffic = deviceTraffic[d.ip] ?? 0;
-        return ListTile(
-          title: Text("${d.name} (${d.type})"),
-          subtitle: Text("IP: ${d.ip} | Trafego: ${traffic.toStringAsFixed(2)} Mbps"),
-          trailing: IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _renameDeviceDialog(context, d),
-          ),
-        );
-      },
-    );
+class _DashboardScreenState extends State<DashboardScreen> {
+  late RouterService routerService;
+  late IAService iaService;
+  List<DeviceModel> devices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    routerService = Provider.of<RouterService>(context, listen: false);
+    iaService = Provider.of<IAService>(context, listen: false);
+
+    _loadDevices();
+    _startTrafficMonitoring();
   }
 
-  void _renameDeviceDialog(BuildContext context, device) {
-    final controller = TextEditingController(text: device.name);
-    showDialog(
+  void _loadDevices() async {
+    devices = await routerService.getDevices(); // Tráfego real
+    setState(() {});
+    iaService.analyzeDevices(devices);
+  }
+
+  void _startTrafficMonitoring() {
+    routerService.monitorTraffic((usage) {
+      iaService.analyzeTraffic(devices, usage);
+    });
+  }
+
+  void _editDeviceName(DeviceModel device) async {
+    TextEditingController controller = TextEditingController(text: device.name);
+    await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Renomear dispositivo"),
+        title: const Text('Editar nome do dispositivo'),
         content: TextField(controller: controller),
         actions: [
           TextButton(
             onPressed: () {
-              iaService.renameDevice(device.mac, controller.text);
+              setState(() {
+                device.name = controller.text;
+              });
+              routerService.updateDevice(device);
               Navigator.pop(context);
             },
-            child: const Text("Salvar"),
+            child: const Text('Salvar'),
           ),
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Dashboard Observador')),
+      body: ListView.builder(
+        itemCount: devices.length,
+        itemBuilder: (_, index) {
+          final device = devices[index];
+          return ListTile(
+            title: Text(device.name),
+            subtitle: Text('${device.type} • ${device.ip}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _editDeviceName(device),
+            ),
+          );
+        },
       ),
     );
   }
