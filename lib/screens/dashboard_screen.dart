@@ -1,76 +1,78 @@
 import 'package:flutter/material.dart';
-import '../services/ia_service.dart';
 import '../services/router_service.dart';
+import '../services/ia_network_service.dart';
 import '../models/device_model.dart';
-import 'package:hive/hive.dart';
 
-class HomeScreen extends StatefulWidget {
-  final IAService iaService;
+class DashboardScreen extends StatefulWidget {
   final RouterService routerService;
+  final IANetworkService iaService;
 
-  const HomeScreen({required this.iaService, required this.routerService, Key? key}) : super(key: key);
+  const DashboardScreen({required this.routerService, required this.iaService, super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _DashboardScreenState extends State<DashboardScreen> {
   List<DeviceModel> devices = [];
-  late Box deviceBox;
 
   @override
   void initState() {
     super.initState();
-    _initHive();
+    _initializeDevices();
   }
 
-  void _initHive() async {
-    deviceBox = await Hive.openBox('devices');
-    _loadDevices();
-  }
-
-  void _loadDevices() {
-    List stored = deviceBox.values.toList();
+  Future<void> _initializeDevices() async {
+    // Exemplo para um roteador TP-Link, pode ser iterado para múltiplos
+    await widget.iaService.integrateRouter('tplink', '192.168.0.1');
     setState(() {
-      devices = stored.isNotEmpty ? stored.cast<DeviceModel>() : [];
-    });
-    widget.iaService.analyzeDevices(devices);
-  }
-
-  void _updateDeviceName(DeviceModel device, String newName) {
-    setState(() {
-      device.name = newName;
-      deviceBox.put(device.mac, device);
+      devices = widget.iaService.devices;
     });
   }
 
-  void _updateTraffic(Map<String, double> usage) {
-    widget.iaService.analyzeTraffic(devices, usage);
+  Future<void> _renameDevice(DeviceModel device) async {
+    final controller = TextEditingController(text: device.name);
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Renomear Dispositivo'),
+        content: TextField(controller: controller),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await widget.iaService.renameDevice(device.mac, controller.text);
+              setState(() {
+                devices = widget.iaService.devices;
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Dashboard'),
-      ),
+      appBar: AppBar(title: const Text('Dashboard Observador')),
       body: ListView.builder(
         itemCount: devices.length,
         itemBuilder: (context, index) {
           final device = devices[index];
           return ListTile(
-            title: TextField(
-              controller: TextEditingController(text: device.name),
-              decoration: InputDecoration(labelText: 'Nome do dispositivo'),
-              onSubmitted: (value) => _updateDeviceName(device, value),
-            ),
+            title: Text(device.name),
             subtitle: Text('${device.type} - ${device.ip}'),
             trailing: IconButton(
-              icon: Icon(Icons.speed),
-              onPressed: () {
-                // Priorizar dispositivo via RouterService
-                widget.routerService.prioritizeDevice(device.mac, priority: 200);
-              },
+              icon: const Icon(Icons.edit),
+              onPressed: () => _renameDevice(device),
             ),
           );
         },
