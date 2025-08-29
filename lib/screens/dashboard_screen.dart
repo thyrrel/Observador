@@ -1,81 +1,57 @@
 import 'package:flutter/material.dart';
 import '../services/router_service.dart';
 import '../services/ia_network_service.dart';
-import '../models/device_model.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends StatelessWidget {
   final RouterService routerService;
   final IANetworkService iaService;
+  final Map<String, double> deviceTraffic;
 
-  const DashboardScreen({required this.routerService, required this.iaService, super.key});
+  const DashboardScreen({
+    super.key,
+    required this.routerService,
+    required this.iaService,
+    required this.deviceTraffic,
+  });
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
+  Widget build(BuildContext context) {
+    final devices = routerService.connectedDevices;
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  List<DeviceModel> devices = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeDevices();
+    return ListView.builder(
+      itemCount: devices.length,
+      itemBuilder: (context, index) {
+        final d = devices[index];
+        final traffic = deviceTraffic[d.ip] ?? 0;
+        return ListTile(
+          title: Text("${d.name} (${d.type})"),
+          subtitle: Text("IP: ${d.ip} | Trafego: ${traffic.toStringAsFixed(2)} Mbps"),
+          trailing: IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => _renameDeviceDialog(context, d),
+          ),
+        );
+      },
+    );
   }
 
-  Future<void> _initializeDevices() async {
-    // Exemplo para um roteador TP-Link, pode ser iterado para múltiplos
-    await widget.iaService.integrateRouter('tplink', '192.168.0.1');
-    setState(() {
-      devices = widget.iaService.devices;
-    });
-  }
-
-  Future<void> _renameDevice(DeviceModel device) async {
+  void _renameDeviceDialog(BuildContext context, device) {
     final controller = TextEditingController(text: device.name);
-    await showDialog(
+    showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Renomear Dispositivo'),
+        title: const Text("Renomear dispositivo"),
         content: TextField(controller: controller),
         actions: [
           TextButton(
             onPressed: () {
+              iaService.renameDevice(device.mac, controller.text);
               Navigator.pop(context);
             },
-            child: const Text('Cancelar'),
+            child: const Text("Salvar"),
           ),
-          TextButton(
-            onPressed: () async {
-              await widget.iaService.renameDevice(device.mac, controller.text);
-              setState(() {
-                devices = widget.iaService.devices;
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('Salvar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
         ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard Observador')),
-      body: ListView.builder(
-        itemCount: devices.length,
-        itemBuilder: (context, index) {
-          final device = devices[index];
-          return ListTile(
-            title: Text(device.name),
-            subtitle: Text('${device.type} - ${device.ip}'),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _renameDevice(device),
-            ),
-          );
-        },
       ),
     );
   }
