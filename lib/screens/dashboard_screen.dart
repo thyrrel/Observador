@@ -16,91 +16,97 @@ class DashboardScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  _DashboardScreenState createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
   List<DeviceModel> devices = [];
-  Map<String, double> deviceUsage = {};
+  Map<String, double> traffic = {};
 
   @override
   void initState() {
     super.initState();
-    _initDevices();
+    _startMonitoring();
   }
 
-  Future<void> _initDevices() async {
-    // Obtém os dispositivos reais do RouterService
-    devices = await widget.routerService.getDevices();
-    for (var d in devices) {
-      deviceUsage[d.ip] = 0;
+  void _startMonitoring() {
+    widget.iaService.startMonitoring(interval: Duration(seconds: 5));
+    Timer.periodic(Duration(seconds: 5), (_) async {
+      await _updateDevices();
+    });
+  }
+
+  Future<void> _updateDevices() async {
+    List<DeviceModel> devs = await widget.routerService.getDevices();
+    Map<String, double> traf = {};
+    for (var d in devs) {
+      traf[d.mac] = await widget.routerService.getDeviceTraffic(d.mac);
     }
-    _updateTraffic();
-    // IA analisa dispositivos
-    widget.iaService.analyzeDevices(devices);
+    setState(() {
+      devices = devs;
+      traffic = traf;
+    });
   }
 
-  Future<void> _updateTraffic() async {
-    for (var d in devices) {
-      double mbps = await widget.routerService.getDeviceTraffic(d.mac);
-      deviceUsage[d.ip] = mbps;
-    }
-    // IA analisa o tráfego real e sugere ações
-    widget.iaService.analyzeTraffic(devices, deviceUsage);
-    setState(() {});
-    // Atualiza continuamente a cada 5 segundos
-    Future.delayed(const Duration(seconds: 5), _updateTraffic);
+  void _blockDevice(DeviceModel d) async {
+    await widget.iaService.blockDevice(d);
+    await _updateDevices();
   }
 
-  void _prioritizeDevice(DeviceModel device) async {
-    await widget.routerService.prioritizeDevice(device.mac, priority: 200);
+  void _limitDevice(DeviceModel d, double mbps) async {
+    await widget.iaService.limitDevice(d, mbps);
+    await _updateDevices();
   }
 
-  void _blockDevice(DeviceModel device) async {
-    await widget.routerService.blockDevice(device.mac);
+  void _prioritizeDevice(DeviceModel d, int priority) async {
+    await widget.iaService.prioritizeDevice(d, priority);
+    await _updateDevices();
   }
 
-  void _limitDevice(DeviceModel device, double limitMbps) async {
-    await widget.routerService.limitDevice(device.mac, limitMbps);
+  Widget _buildDeviceTile(DeviceModel d) {
+    double mbps = traffic[d.mac] ?? 0;
+    return Card(
+      child: ListTile(
+        title: Text(d.name),
+        subtitle: Text('${d.type} - ${d.manufacturer}\nBanda: ${mbps.toStringAsFixed(2)} Mbps'),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            switch (value) {
+              case 'Bloquear':
+                _blockDevice(d);
+                break;
+              case 'Limitar':
+                _limitDevice(d, 20); // exemplo fixo
+                break;
+              case 'Priorizar':
+                _prioritizeDevice(d, 200); // exemplo fixo
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'Bloquear', child: Text('Bloquear')),
+            PopupMenuItem(value: 'Limitar', child: Text('Limitar 20 Mbps')),
+            PopupMenuItem(value: 'Priorizar', child: Text('Priorizar 200')),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard de Rede')),
-      body: ListView.builder(
-        itemCount: devices.length,
-        itemBuilder: (context, index) {
-          var device = devices[index];
-          double usage = deviceUsage[device.ip] ?? 0;
-          return Card(
-            margin: const EdgeInsets.all(8),
-            child: ListTile(
-              title: Text(device.name),
-              subtitle: Text('${device.type} • ${device.ip} • ${usage.toStringAsFixed(1)} Mbps'),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'Priorizar':
-                      _prioritizeDevice(device);
-                      break;
-                    case 'Bloquear':
-                      _blockDevice(device);
-                      break;
-                    case 'Limitar':
-                      _limitDevice(device, 10.0);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'Priorizar', child: Text('Priorizar')),
-                  const PopupMenuItem(value: 'Bloquear', child: Text('Bloquear')),
-                  const PopupMenuItem(value: 'Limitar', child: Text('Limitar 10 Mbps')),
-                ],
-              ),
-            ),
-          );
-        },
+      appBar: AppBar(
+        title: Text('Dashboard de Rede'),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _updateDevices,
+        child: ListView.builder(
+          itemCount: devices.length,
+          itemBuilder: (context, index) {
+            return _buildDeviceTile(devices[index]);
+          },
+        ),
       ),
     );
   }
