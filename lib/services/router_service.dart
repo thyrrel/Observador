@@ -1,96 +1,117 @@
+// router_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/device_model.dart';
 
 class RouterService {
-  // Credenciais padrão (para reset ou acesso inicial)
   final Map<String, Map<String, String>> defaultCredentials = {
-    'TP-Link': {'user': 'admin', 'password': 'admin'},
-    'Xiaomi': {'user': 'admin', 'password': 'admin'},
-    'Asus': {'user': 'admin', 'password': 'admin'},
-    'Huawei': {'user': 'admin', 'password': 'admin'}
+    'TP-Link': {'user': 'admin', 'pass': 'admin'},
+    'Xiaomi': {'user': 'admin', 'pass': 'admin'},
+    'Huawei': {'user': 'admin', 'pass': 'admin'},
+    'Asus': {'user': 'admin', 'pass': 'admin'},
   };
 
-  // Armazena credenciais customizadas do usuário
-  final Map<String, Map<String, String>> savedCredentials = {};
+  /// Lista de dispositivos conectados por roteador
+  Map<String, List<DeviceModel>> devicesByRouter = {};
 
-  RouterService();
+  /// Conecta automaticamente ao roteador pelo IP e marca os dispositivos
+  Future<bool> connect(String routerBrand, String ip,
+      {String? user, String? pass}) async {
+    final creds = {
+      'user': user ?? defaultCredentials[routerBrand]?['user'],
+      'pass': pass ?? defaultCredentials[routerBrand]?['pass']
+    };
+    if (creds['user'] == null || creds['pass'] == null) return false;
 
-  // Conecta ao roteador usando credenciais fornecidas ou padrão
-  Future<bool> connect(String brand, String ip) async {
-    Map<String, String> creds = savedCredentials[brand] ?? defaultCredentials[brand]!;
-
-    // Exemplo genérico de login (cada marca terá endpoint diferente)
     try {
-      var response = await http.post(
+      // Exemplo de login para roteador (cada marca tem API própria)
+      final response = await http.post(
         Uri.parse('http://$ip/login'),
-        body: {'username': creds['user'], 'password': creds['password']},
+        body: jsonEncode({'username': creds['user'], 'password': creds['pass']}),
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        print('$brand conectado com sucesso em $ip');
+        // Ao conectar, busca lista de dispositivos
+        await fetchDevices(routerBrand, ip);
         return true;
       }
-      return false;
     } catch (e) {
-      print('Erro ao conectar $brand em $ip: $e');
-      return false;
+      print('Erro ao conectar $routerBrand $ip: $e');
+    }
+    return false;
+  }
+
+  /// Obtém a lista de dispositivos conectados (tráfego real)
+  Future<void> fetchDevices(String routerBrand, String ip) async {
+    try {
+      final response = await http.get(Uri.parse('http://$ip/devices'));
+      if (response.statusCode == 200) {
+        List data = jsonDecode(response.body);
+        devicesByRouter[ip] = data
+            .map((d) => DeviceModel.fromMap(Map<String, dynamic>.from(d)))
+            .toList();
+      }
+    } catch (e) {
+      print('Erro ao buscar dispositivos $routerBrand $ip: $e');
     }
   }
 
-  // Prioriza um dispositivo pelo MAC ou IP
-  Future<void> prioritizeDevice(String mac, {int priority = 100}) async {
-    // Aqui você deve implementar o endpoint real do QoS de cada marca
-    print('Prioridade de $mac ajustada para $priority');
-  }
-
-  // Bloqueia um dispositivo na rede
-  Future<void> blockDevice(String mac) async {
-    print('Dispositivo $mac bloqueado');
-  }
-
-  // Desbloqueia um dispositivo na rede
-  Future<void> unblockDevice(String mac) async {
-    print('Dispositivo $mac desbloqueado');
-  }
-
-  // Atualiza credenciais personalizadas
-  void saveCredentials(String brand, String user, String password) {
-    savedCredentials[brand] = {'user': user, 'password': password};
-  }
-
-  // Detecta automaticamente dispositivos conectados (tráfego real)
-  Future<List<Map<String, dynamic>>> getConnectedDevices(String ip, String brand) async {
-    List<Map<String, dynamic>> devices = [];
-
+  /// Prioriza dispositivo por MAC (QoS real)
+  Future<void> prioritizeDevice(String mac,
+      {int priority = 100, String? routerIp}) async {
     try {
-      // Simulação de request real, adaptar para cada marca
-      var response = await http.get(Uri.parse('http://$ip/devices'));
+      String? ip = routerIp ??
+          devicesByRouter.keys.firstWhere(
+              (k) => devicesByRouter[k]!.any((d) => d.mac == mac),
+              orElse: () => '');
+      if (ip.isEmpty) return;
+
+      final response = await http.post(
+        Uri.parse('http://$ip/qos'),
+        body: jsonEncode({'mac': mac, 'priority': priority}),
+        headers: {'Content-Type': 'application/json'},
+      );
+
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        print('Dispositivo $mac priorizado com $priority Mbps');
+      }
+    } catch (e) {
+      print('Erro ao priorizar dispositivo $mac: $e');
+    }
+  }
+
+  /// Atualiza nome ou tipo do dispositivo
+  void updateDevice(String ip, String mac, {String? name, String? type}) {
+    final routerDevices = devicesByRouter[ip];
+    if (routerDevices != null) {
+      final device = routerDevices.firstWhere(
+          (d) => d.mac == mac,
+          orElse: () => DeviceModel(
+              ip: ip, mac: mac, manufacturer: 'Desconhecido', type: '', name: ''));
+      if (device.ip != '') {
+        if (name != null) device.name = name;
+        if (type != null) device.type = type;
+      }
+    }
+  }
+
+  /// Método geral de tráfego real: retorna Mbps por dispositivo
+  Future<Map<String, double>> getTraffic(String routerIp) async {
+    Map<String, double> usage = {};
+    try {
+      final response = await http.get(Uri.parse('http://$routerIp/traffic'));
+      if (response.statusCode == 200) {
+        List data = jsonDecode(response.body);
         for (var d in data) {
-          devices.add({
-            'name': d['name'] ?? 'Desconhecido',
-            'ip': d['ip'],
-            'mac': d['mac'],
-            'type': d['type'] ?? 'Desconhecido',
-            'traffic': d['traffic'] ?? 0
-          });
+          String mac = d['mac'];
+          double mbps = (d['mbps'] ?? 0).toDouble();
+          usage[mac] = mbps;
         }
       }
     } catch (e) {
-      print('Erro ao obter dispositivos de $brand em $ip: $e');
+      print('Erro ao obter tráfego $routerIp: $e');
     }
-
-    return devices;
-  }
-
-  // Aplica priorizações automáticas de acordo com padrões da IA
-  Future<void> autoOptimize(List<Map<String, dynamic>> devices) async {
-    for (var d in devices) {
-      if (d['type'].contains('TV') && (d['traffic'] ?? 0) > 20) {
-        // Exemplo: priorizar consoles ou PCs quando streaming é alto
-        print('Otimização aplicada em ${d['name']}');
-      }
-    }
+    return usage;
   }
 }
