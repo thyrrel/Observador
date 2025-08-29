@@ -1,6 +1,5 @@
-// lib/services/ia_service.dart
-
-import 'dart:async';
+// ia_service.dart
+import '../models/device_model.dart';
 import 'router_service.dart';
 
 typedef VoiceCallback = void Function(String msg);
@@ -8,81 +7,43 @@ typedef VoiceCallback = void Function(String msg);
 class IAService {
   final VoiceCallback voiceCallback;
   final RouterService routerService;
-
   List<DeviceModel> devices = [];
-  Map<String, double> trafficData = {};
 
   IAService({required this.voiceCallback, required this.routerService});
 
-  // Inicializa monitoramento contínuo
-  void startMonitoring({Duration interval = const Duration(seconds: 5)}) {
-    Timer.periodic(interval, (timer) async {
-      await _updateDevices();
-      await _analyzeTraffic();
-      await _detectSuspiciousDevices();
-    });
-  }
-
-  // Atualiza a lista de dispositivos com tráfego real
-  Future<void> _updateDevices() async {
-    devices = await routerService.getDevices();
-    trafficData.clear();
+  // Atualiza dispositivos e identifica tipos suspeitos
+  Future<void> analyzeDevices(List<DeviceModel> devs) async {
+    devices = devs;
     for (var d in devices) {
-      double mbps = await routerService.getDeviceTraffic(d.mac);
-      trafficData[d.mac] = mbps;
-    }
-  }
-
-  // Detecta dispositivos suspeitos
-  Future<void> _detectSuspiciousDevices() async {
-    for (var d in devices) {
-      if (d.type.contains('Desconhecido') || d.manufacturer == 'Desconhecido') {
+      if (d.type.contains('Desconhecido')) {
         voiceCallback('Dispositivo suspeito detectado: ${d.name}');
-        await routerService.blockDevice(d.mac);
-        voiceCallback('${d.name} foi bloqueado automaticamente.');
       }
     }
+    // Aplicar otimização automática via RouterService
+    await routerService.autoOptimize(devices.map((d) => d.toMap()).toList());
   }
 
-  // Analisa tráfego e aplica ações automáticas
-  Future<void> _analyzeTraffic() async {
+  // Analisa tráfego em tempo real
+  Future<void> analyzeTraffic(Map<String, double> usage) async {
     for (var d in devices) {
-      double mbps = trafficData[d.mac] ?? 0;
-
-      // Exemplo de regra: TV >20 Mbps e console/PC ativo → prioriza jogo
-      if (d.type.contains('TV') && mbps > 20) {
-        DeviceModel? gameDevice = devices.firstWhere(
-            (dev) => dev.type.contains('Console') || dev.type.contains('PC'),
-            orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: ''));
-
-        if (gameDevice.ip != '') {
-          voiceCallback(
-              'A TV ${d.name} está consumindo $mbps Mbps. Priorizando ${gameDevice.name} automaticamente.');
-          await routerService.prioritizeDevice(gameDevice.mac, priority: 200);
-        }
-      }
-
-      // Limita dispositivos excedendo limite definido
-      if (mbps > 50) {
-        voiceCallback('${d.name} ultrapassou 50 Mbps. Limitando automaticamente.');
-        await routerService.limitDevice(d.mac, 50);
+      double mbps = usage[d.ip] ?? 0;
+      if (mbps > 20 && d.type.contains('TV')) {
+        voiceCallback('A TV ${d.name} está consumindo $mbps Mbps. Deseja priorizar o jogo?');
+        await _suggestQoS(d);
       }
     }
   }
 
-  // Permite ação manual
-  Future<void> blockDevice(DeviceModel device) async {
-    await routerService.blockDevice(device.mac);
-    voiceCallback('${device.name} bloqueado manualmente.');
-  }
+  // Sugere priorização para dispositivos de jogos
+  Future<void> _suggestQoS(DeviceModel tv) async {
+    DeviceModel? gameDevice = devices.firstWhere(
+      (d) => d.type.contains('Console') || d.type.contains('PC'),
+      orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: '')
+    );
 
-  Future<void> limitDevice(DeviceModel device, double mbps) async {
-    await routerService.limitDevice(device.mac, mbps);
-    voiceCallback('${device.name} limitado a $mbps Mbps.');
-  }
-
-  Future<void> prioritizeDevice(DeviceModel device, int priority) async {
-    await routerService.prioritizeDevice(device.mac, priority: priority);
-    voiceCallback('${device.name} priorizado com prioridade $priority.');
+    if (gameDevice.ip != '') {
+      voiceCallback('Sugerindo priorizar ${gameDevice.name}');
+      await routerService.prioritizeDevice(gameDevice.mac, priority: 200);
+    }
   }
 }
