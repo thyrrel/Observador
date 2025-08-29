@@ -1,92 +1,117 @@
-// lib/services/router_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
-enum RouterType { huawei, xiaomi, tplink, asus }
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RouterService {
-  final RouterType type;
-  final String ip;
-  String username;
-  String password;
-  bool _loggedIn = false;
-
-  RouterService({
-    required this.type,
-    required this.ip,
-    required this.username,
-    required this.password,
-  });
-
-  // Mapa de credenciais padrão
-  static const Map<RouterType, Map<String, String>> defaultCredentials = {
-    RouterType.huawei: {'username': 'admin', 'password': 'admin'},
-    RouterType.xiaomi: {'username': 'admin', 'password': 'admin'},
-    RouterType.tplink: {'username': 'admin', 'password': 'admin'},
-    RouterType.asus: {'username': 'admin', 'password': 'admin'},
+  // Credenciais padrão para cada marca
+  final Map<String, String> defaultCredentials = {
+    'huawei': 'admin:admin',
+    'tplink': 'admin:admin',
+    'xiaomi': 'admin:admin',
+    'asus': 'admin:admin',
   };
 
-  // Login principal com fallback automático
-  Future<bool> login() async {
-    bool success = await _attemptLogin(username, password);
-    if (!success) {
-      final defaults = defaultCredentials[type]!;
-      username = defaults['username']!;
-      password = defaults['password']!;
-      success = await _attemptLogin(username, password);
+  // Salvar credenciais localmente
+  Future<void> saveCredentials(String brand, String username, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$brand-username', username);
+    await prefs.setString('$brand-password', password);
+  }
+
+  // Carregar credenciais salvas
+  Future<Map<String, String>?> loadCredentials(String brand) async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('$brand-username');
+    final password = prefs.getString('$brand-password');
+    if (username != null && password != null) {
+      return {'username': username, 'password': password};
     }
-    _loggedIn = success;
-    return success;
+    return null;
   }
 
-  Future<bool> _attemptLogin(String user, String pass) async {
-    try {
-      switch (type) {
-        case RouterType.huawei:
-          return await _loginHuawei(user, pass);
-        case RouterType.xiaomi:
-          return await _loginXiaomi(user, pass);
-        case RouterType.tplink:
-          return await _loginTplink(user, pass);
-        case RouterType.asus:
-          return await _loginAsus(user, pass);
-      }
-    } catch (_) {}
-    return false;
+  // Conectar roteador (tenta credenciais salvas ou padrão)
+  Future<bool> connectRouter(String brand, String ip) async {
+    Map<String, String>? creds = await loadCredentials(brand);
+    if (creds == null) {
+      final defaultCred = defaultCredentials[brand]!.split(':');
+      creds = {'username': defaultCred[0], 'password': defaultCred[1]};
+    }
+
+    final url = Uri.parse('http://$ip/login');
+    final response = await http.post(
+      url,
+      body: {
+        'username': creds['username']!,
+        'password': creds['password']!,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      await saveCredentials(brand, creds['username']!, creds['password']!);
+      return true;
+    } else {
+      return false;
+    }
   }
 
-  // --- Métodos de login específicos por marca ---
-  Future<bool> _loginHuawei(String user, String pass) async {
-    final url = Uri.parse('http://$ip/api/user/login');
-    final body = '<request><Username>$user</Username><Password>$pass</Password></request>';
-    final response = await http.post(url, body: body, headers: {'Content-Type': 'application/xml'});
-    return response.statusCode == 200 && response.body.contains('<response>OK</response>');
-  }
+  // Bloquear IP (genérico)
+  Future<bool> blockIP(String brand, String ip, String targetIP) async {
+    final creds = await loadCredentials(brand);
+    if (creds == null) return false;
 
-  Future<bool> _loginXiaomi(String user, String pass) async {
-    final url = Uri.parse('http://$ip/cgi-bin/luci');
-    final response = await http.get(url, headers: {'Authorization': 'Basic ' + base64Encode(utf8.encode('$user:$pass'))});
+    final url = Uri.parse('http://$ip/block');
+    final response = await http.post(
+      url,
+      body: {
+        'username': creds['username']!,
+        'password': creds['password']!,
+        'targetIP': targetIP,
+      },
+    );
+
     return response.statusCode == 200;
   }
 
-  Future<bool> _loginTplink(String user, String pass) async {
-    final url = Uri.parse('http://$ip/userRpm/LoginRpm.htm?Save=Save');
-    final response = await http.get(url, headers: {'Authorization': 'Basic ' + base64Encode(utf8.encode('$user:$pass'))});
+  // Limitar velocidade de IP (genérico)
+  Future<bool> limitIP(String brand, String ip, String targetIP, int speedKb) async {
+    final creds = await loadCredentials(brand);
+    if (creds == null) return false;
+
+    final url = Uri.parse('http://$ip/limit');
+    final response = await http.post(
+      url,
+      body: {
+        'username': creds['username']!,
+        'password': creds['password']!,
+        'targetIP': targetIP,
+        'speed': speedKb.toString(),
+      },
+    );
+
     return response.statusCode == 200;
   }
 
-  Future<bool> _loginAsus(String user, String pass) async {
-    final url = Uri.parse('http://$ip/login.cgi');
-    final response = await http.post(url, body: {'username': user, 'password': pass});
-    return response.statusCode == 200 && response.body.contains('login_success');
-  }
+  // Métodos específicos por marca (exemplo Huawei)
+  Future<bool> connectHuawei(String ip) async => connectRouter('huawei', ip);
+  Future<bool> blockHuaweiIP(String ip, String targetIP) async => blockIP('huawei', ip, targetIP);
+  Future<bool> limitHuaweiIP(String ip, String targetIP, int speedKb) async =>
+      limitIP('huawei', ip, targetIP, speedKb);
 
-  // --- Funções de controle ---
-  Future<bool> blockIP(String targetIP) async {
-    if (!_loggedIn) return false;
-    switch (type) {
-      case RouterType.huawei:
-        return await _blockHuawei(targetIP);
-      case RouterType.xiaomi:
-        return await _blockXiaomi(targetIP);
-      case RouterType
+  // Métodos TP-Link
+  Future<bool> connectTPLink(String ip) async => connectRouter('tplink', ip);
+  Future<bool> blockTPLinkIP(String ip, String targetIP) async => blockIP('tplink', ip, targetIP);
+  Future<bool> limitTPLinkIP(String ip, String targetIP, int speedKb) async =>
+      limitIP('tplink', ip, targetIP, speedKb);
+
+  // Métodos Xiaomi
+  Future<bool> connectXiaomi(String ip) async => connectRouter('xiaomi', ip);
+  Future<bool> blockXiaomiIP(String ip, String targetIP) async => blockIP('xiaomi', ip, targetIP);
+  Future<bool> limitXiaomiIP(String ip, String targetIP, int speedKb) async =>
+      limitIP('xiaomi', ip, targetIP, speedKb);
+
+  // Métodos Asus
+  Future<bool> connectAsus(String ip) async => connectRouter('asus', ip);
+  Future<bool> blockAsusIP(String ip, String targetIP) async => blockIP('asus', ip, targetIP);
+  Future<bool> limitAsusIP(String ip, String targetIP, int speedKb) async =>
+      limitIP('asus', ip, targetIP, speedKb);
+}
