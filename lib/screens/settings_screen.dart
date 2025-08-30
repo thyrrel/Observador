@@ -1,56 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _darkMode = false;
-
-  @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configurações'),
-      ),
-      body: ListView(
-        children: [
-          SwitchListTile(
-            title: const Text('Tema Escuro'),
-            subtitle: const Text('Ativa ou desativa o modo escuro'),
-            value: _darkMode,
-            onChanged: (value) {
-              setState(() {
-                _darkMode = value;
-                // Aqui depois você pode chamar um provider ou service para salvar a preferência
-              });
-            },
-          ),
-          ListTile(
-            title: const Text('Sobre'),
-            subtitle: const Text('Informações sobre o Observador'),
-            onTap: () {
-              showAboutDialog(
-                context: context,
-                applicationName: 'Observador',
-                applicationVersion: '1.0.0',
-                children: const [
-                  Text('Aplicativo de monitoramento e controle de redes e dispositivos.'),
-                ],
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('Backup/Restaurar Configurações'),
-            subtitle: const Text('Em breve integração com nuvem e exportação de dados'),
-            onTap: () {
-              // Placeholder para futuras integrações
-            },
-          ),
-        ],
+      appBar: AppBar(title: const Text('Configurações')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            ListTile(
+              title: const Text('Tema do Aplicativo'),
+              subtitle: Text(appState.theme.name),
+              trailing: DropdownButton<AppTheme>(
+                value: appState.theme,
+                onChanged: (AppTheme? newTheme) {
+                  if (newTheme != null) appState.setTheme(newTheme);
+                },
+                items: AppTheme.values.map((theme) {
+                  return DropdownMenuItem(
+                    value: theme,
+                    child: Text(theme.name),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => appState.nextTheme(),
+              child: const Text('Alternar para próximo tema'),
+            ),
+          ],
+        ),
       ),
     );
   }
