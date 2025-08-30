@@ -1,4 +1,3 @@
-// lib/pages/settings_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
@@ -24,9 +23,7 @@ class SettingsPage extends StatelessWidget {
               trailing: DropdownButton<AppTheme>(
                 value: currentTheme,
                 onChanged: (AppTheme? theme) {
-                  if (theme != null) {
-                    themeProvider.setTheme(theme);
-                  }
+                  if (theme != null) themeProvider.setTheme(theme);
                 },
                 items: AppTheme.values.map((theme) {
                   return DropdownMenuItem(
@@ -38,9 +35,7 @@ class SettingsPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                themeProvider.nextTheme();
-              },
+              onPressed: () => themeProvider.nextTheme(),
               child: const Text('Alternar para próximo tema'),
             ),
           ],
