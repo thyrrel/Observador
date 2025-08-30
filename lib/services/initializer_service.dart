@@ -1,62 +1,47 @@
 // lib/services/initializer_service.dart
 
-import 'dart:async';
-import 'logger_service.dart';
-import 'ia_service.dart';
 import 'storage_service.dart';
-import 'theme_service.dart';
+import 'history_service.dart';
+import 'logger_service.dart';
 
-class InitializerService {
-  static final InitializerService _instance = InitializerService._internal();
-  factory InitializerService() => _instance;
-  InitializerService._internal();
+class Initializer {
+  static final Initializer _instance = Initializer._internal();
+  factory Initializer() => _instance;
+  Initializer._internal();
 
-  final LoggerService _logger = LoggerService();
-  final IaService _ia = IaService();
   final StorageService _storage = StorageService();
-  final ThemeService _theme = ThemeService();
+  final HistoryService _history = HistoryService();
+  final LoggerService _logger = LoggerService();
 
-  late StreamSubscription<String> _logSubscription;
+  /// Inicializa todo o sistema
+  Future<void> init() async {
+    _logger.log('Initializer: Iniciando inicialização completa.');
 
-  Future<void> initialize() async {
-    // Inicializa armazenamento seguro
+    // Inicializa StorageService
     await _storage.init();
+    _logger.log('Initializer: StorageService inicializado.');
 
-    // Inicializa temas
-    await _theme.init();
+    // Inicializa HistoryService
+    await _history.init();
+    _logger.log('Initializer: HistoryService inicializado.');
 
-    // Inicializa Logger
-    await _logger.init();
+    // Cria placeholders se não existirem
+    await _createPlaceholder('theme', 'light'); // tema padrão: light
+    await _createPlaceholder('user_settings', '{}');
+    await _createPlaceholder('network_devices', '[]');
 
-    // Inicializa IA
-    await _ia.initialize();
-
-    // Processa logs existentes
-    final logs = await _logger.getAllLogs();
-    for (var log in logs) {
-      await _ia.processLog(log);
-    }
-
-    // Observa logs novos e envia automaticamente para IA
-    _logSubscription = _logger.logStream.listen((logLine) async {
-      await _ia.processLog(logLine);
-    });
-
-    await _logger.log("Initializer: Sistema inicializado com sucesso.");
+    _logger.log('Initializer: Placeholders criados ou verificados.');
+    _logger.log('Initializer: Inicialização completa.');
   }
 
-  // Função para alterar tema dinamicamente (mantendo todos os quatro)
-  Future<void> setTheme(String themeName) async {
-    if (_theme.availableThemes.contains(themeName)) {
-      await _theme.setCurrentTheme(themeName);
-      await _logger.log("Tema alterado para: $themeName");
+  /// Cria placeholder se não existir
+  Future<void> _createPlaceholder(String key, String defaultValue) async {
+    String? existing = await _storage.read(key);
+    if (existing == null) {
+      await _storage.write(key, defaultValue);
+      _logger.log('Initializer: Placeholder criado -> $key = $defaultValue');
     } else {
-      await _logger.log("Tema inválido solicitado: $themeName");
+      _logger.log('Initializer: Placeholder existente mantido -> $key = $existing');
     }
-  }
-
-  Future<void> dispose() async {
-    await _logSubscription.cancel();
-    await _logger.log("Initializer: Sistema finalizado.");
   }
 }
