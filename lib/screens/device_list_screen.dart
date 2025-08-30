@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/device_provider.dart';
+import '../providers/app_state.dart';
+import '../services/network_service.dart';
 import '../widgets/device_tile.dart';
 
 class DeviceListScreen extends StatelessWidget {
@@ -8,27 +9,32 @@ class DeviceListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<AppState>(context).themeData;
+    final networkService = Provider.of<NetworkService>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dispositivos da Rede'),
+        backgroundColor: theme.primaryColor,
       ),
-      body: Consumer<DeviceProvider>(
-        builder: (_, provider, __) {
-          final devices = provider.devices;
-
-          if (devices.isEmpty) {
-            return const Center(child: Text('Nenhum dispositivo encontrado'));
-          }
-
-          return ListView.builder(
-            itemCount: devices.length,
-            itemBuilder: (context, index) {
-              final device = devices[index];
-              return DeviceTile(device: device);
-            },
-          );
-        },
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: networkService.devices.isEmpty
+          ? Center(
+              child: Text(
+                'Nenhum dispositivo encontrado',
+                style: theme.textTheme.bodyText1,
+              ),
+            )
+          : ListView.builder(
+              itemCount: networkService.devices.length,
+              itemBuilder: (context, index) {
+                final device = networkService.devices[index];
+                return DeviceTile(
+                  device: device,
+                  theme: theme,
+                );
+              },
+            ),
     );
   }
 }
