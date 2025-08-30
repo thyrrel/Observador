@@ -1,35 +1,42 @@
+// lib/models/device_model.dart
 class DeviceModel {
-  final String id;
-  String name;
   String ip;
+  String mac;
+  String manufacturer;
+  String type;
+  String name;
   bool blocked;
-  String? icon;
 
   DeviceModel({
-    required this.id,
-    required this.name,
     required this.ip,
+    required this.mac,
+    required this.manufacturer,
+    required this.type,
+    required this.name,
     this.blocked = false,
-    this.icon,
   });
 
+  // Converte JSON em DeviceModel
   factory DeviceModel.fromJson(Map<String, dynamic> json) {
     return DeviceModel(
-      id: json['id'],
-      name: json['name'],
-      ip: json['ip'],
+      ip: json['ip'] ?? '',
+      mac: json['mac'] ?? '',
+      manufacturer: json['manufacturer'] ?? '',
+      type: json['type'] ?? '',
+      name: json['name'] ?? '',
       blocked: json['blocked'] ?? false,
-      icon: json['icon'],
     );
   }
 
+  // Converte DeviceModel em JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
       'ip': ip,
+      'mac': mac,
+      'manufacturer': manufacturer,
+      'type': type,
+      'name': name,
       'blocked': blocked,
-      'icon': icon,
     };
   }
 }
