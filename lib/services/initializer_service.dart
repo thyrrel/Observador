@@ -1,82 +1,52 @@
-// /services/initializer.dart
+// /lib/initializer.dart
 
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'storage_service.dart';
-import 'history_service.dart';
-import 'logger_service.dart';
-import 'theme_manager.dart';
-import 'placeholder_manager.dart';
+import 'services/storage_service.dart';
+import 'services/history_service.dart';
+import 'services/theme_service.dart';
+import 'services/placeholder_service.dart';
+import 'services/ia_service.dart';
 
 class Initializer {
-  static final Initializer _instance = Initializer._internal();
+  final StorageService storageService = StorageService();
+  final HistoryService historyService = HistoryService();
+  final ThemeService themeService = ThemeService();
+  final PlaceholderService placeholderService = PlaceholderService();
+  final IAService iaService = IAService();
 
-  factory Initializer() {
-    return _instance;
+  /// Inicializa todos os serviços do app Observador
+  Future<void> initializeApp() async {
+    // Inicializa armazenamento seguro
+    await storageService.init();
+
+    // Inicializa placeholders (cria se não existirem)
+    await placeholderService.initPlaceholders();
+
+    // Inicializa temas (carrega tema salvo ou padrão)
+    await themeService.loadThemes();
+
+    // Inicializa histórico de eventos
+    await historyService.init();
+
+    // Inicializa IA híbrida (local + API)
+    await iaService.init();
+
+    // Exemplo de depuração: registra inicialização
+    await historyService.logEvent("App inicializado com sucesso");
+
+    debugPrint("🚀 Inicialização completa: todos os serviços carregados!");
   }
 
-  Initializer._internal();
+  /// Método para depuração automatizada
+  Future<void> autoDebug() async {
+    // Lê logs de histórico
+    var logs = await historyService.getAllLogs();
+    debugPrint("📄 Logs atuais:\n$logs");
 
-  StorageService storageService = StorageService();
-  HistoryService historyService = HistoryService();
-  LoggerService loggerService = LoggerService();
-  ThemeManager themeManager = ThemeManager();
-  PlaceholderManager placeholderManager = PlaceholderManager();
+    // Pode ajustar placeholders ou corrigir valores inválidos
+    await placeholderService.verifyAndFixPlaceholders();
 
-  Future<void> init({bool forceInit = false}) async {
-    // 1. Inicializar storage seguro
-    await storageService.init(forceInit: forceInit);
-
-    // 2. Inicializar histórico
-    await historyService.init(forceInit: forceInit);
-
-    // 3. Inicializar logger
-    await loggerService.init(forceInit: forceInit);
-
-    // 4. Inicializar temas (claro, escuro, OLED, Matrix)
-    await themeManager.init(forceInit: forceInit);
-
-    // 5. Criar placeholders padrão para arquivos/configs ausentes
-    await placeholderManager.init(forceInit: forceInit);
-
-    // 6. Verificar dependências essenciais
-    await _checkDependencies();
-
-    // 7. Log final de inicialização
-    loggerService.log('Initializer: Todas as services carregadas com sucesso.');
-
-    // 8. Hook para IA (local + API)
-    _setupAIIntegration();
-  }
-
-  Future<void> _checkDependencies() async {
-    // Exemplo: checar se diretórios e arquivos críticos existem
-    List<String> requiredDirs = [
-      storageService.baseDir,
-      historyService.baseDir,
-      'logs',
-      'screens',
-      'providers',
-    ];
-
-    for (String dir in requiredDirs) {
-      final directory = Directory(dir);
-      if (!directory.existsSync()) {
-        directory.createSync(recursive: true);
-        loggerService.log('Initializer: Diretório criado -> $dir');
-      }
-    }
-
-    // Placeholder de dependências futuras
-    // Aqui podemos checar pacotes flutter ou arquivos essenciais
-  }
-
-  void _setupAIIntegration() {
-    // Hook para análise de logs local + integração com API NLP / Deep Learning
-    loggerService.log('Initializer: Hook IA configurado (local + API).');
-    // Exemplo: podemos passar logs para análise de padrões e alertas
+    // IA pode analisar logs e sugerir correções
+    await iaService.analyzeLogs(logs);
   }
 }
-
-// Uso:
-// await Initializer().init();
