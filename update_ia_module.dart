@@ -1,39 +1,38 @@
-import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'services/theme_service.dart';
+import 'screens/home_screen.dart';
+import 'firebase_options.dart'; // gerado pelo FlutterFire CLI
 
-void main() {
-  final projectDir = Directory.current.path; // Diretório raiz do seu projeto
-  final oldClass = 'IAService';
-  final newClass = 'IANetworkManager';
-  final oldImport = "import 'services/ia_service.dart';";
-  final newImport = "import 'services/ia_network_manager.dart';";
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  final files = Directory(projectDir)
-      .listSync(recursive: true)
-      .where((f) => f.path.endsWith('.dart'))
-      .toList();
+  // Inicializa o Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  for (var file in files) {
-    final f = File(file.path);
-    String content = f.readAsStringSync();
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeService(),
+      child: const UpdateIAModuleApp(),
+    ),
+  );
+}
 
-    // Atualiza imports
-    content = content.replaceAll(oldImport, newImport);
+class UpdateIAModuleApp extends StatelessWidget {
+  const UpdateIAModuleApp({super.key});
 
-    // Substitui instâncias
-    content = content.replaceAllMapped(
-        RegExp(r'final\s+(\w+)\s*=\s*IAService\(([^)]*)\);'), (match) {
-      final varName = match.group(1);
-      final args = match.group(2);
-      return 'final $varName = IANetworkManager($args);';
-    });
+  @override
+  Widget build(BuildContext context) {
+    final themeService = Provider.of<ThemeService>(context);
 
-    // Substitui chamadas de métodos
-    content = content.replaceAll('analyzeDevices', 'startMonitoring');
-    content = content.replaceAll('analyzeTraffic', 'setDeviceUsageType');
-
-    f.writeAsStringSync(content);
-    print('Arquivo atualizado: ${f.path}');
+    return MaterialApp(
+      title: 'Observador IA Module',
+      debugShowCheckedModeBanner: false,
+      theme: themeService.theme,
+      home: const HomeScreen(),
+    );
   }
-
-  print('\n✅ Todas as referências de IAService foram substituídas por IANetworkManager.');
 }
