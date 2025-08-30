@@ -1,44 +1,44 @@
-name: Observador
+name: guardianfounds
+description: Aplicativo de wallet invisível com cartões, documentos, pix, crypto, imagens sensíveis e widget de cotações.
+publish_to: "none"
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
+version: 1.0.0+1
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+environment:
+  sdk: ">=3.4.0 <4.0.0"
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+dependencies:
+  flutter:
+    sdk: flutter
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.24.0"
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2
+  local_auth: ^2.3.0
+  flutter_local_notifications: ^17.2.3
+  http: ^1.2.2
+  intl: ^0.19.0
+  path_provider: ^2.1.4
+  file_picker: ^8.0.6
+  google_fonts: ^6.2.1
 
-      - name: Install dependencies
-        run: flutter pub get
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
 
-      - name: Analyze
-        run: flutter analyze
+flutter:
+  uses-material-design: true
 
-      # 🚨 Temporariamente desativado porque os arquivos/testes ainda não existem
-      # - name: Run tests
-      #   run: flutter test
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/docs/
 
-      - name: Build APK (release)
-        run: flutter build apk --release
-
-      - name: Build AppBundle (release)
-        run: flutter build appbundle --release
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-outputs
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Regular.ttf
+        - asset: assets/fonts/Montserrat-Bold.ttf
+          weight: 700
