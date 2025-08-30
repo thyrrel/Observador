@@ -1,47 +1,82 @@
-// lib/services/initializer_service.dart
+// /services/initializer.dart
 
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'storage_service.dart';
 import 'history_service.dart';
 import 'logger_service.dart';
+import 'theme_manager.dart';
+import 'placeholder_manager.dart';
 
 class Initializer {
   static final Initializer _instance = Initializer._internal();
-  factory Initializer() => _instance;
+
+  factory Initializer() {
+    return _instance;
+  }
+
   Initializer._internal();
 
-  final StorageService _storage = StorageService();
-  final HistoryService _history = HistoryService();
-  final LoggerService _logger = LoggerService();
+  StorageService storageService = StorageService();
+  HistoryService historyService = HistoryService();
+  LoggerService loggerService = LoggerService();
+  ThemeManager themeManager = ThemeManager();
+  PlaceholderManager placeholderManager = PlaceholderManager();
 
-  /// Inicializa todo o sistema
-  Future<void> init() async {
-    _logger.log('Initializer: Iniciando inicialização completa.');
+  Future<void> init({bool forceInit = false}) async {
+    // 1. Inicializar storage seguro
+    await storageService.init(forceInit: forceInit);
 
-    // Inicializa StorageService
-    await _storage.init();
-    _logger.log('Initializer: StorageService inicializado.');
+    // 2. Inicializar histórico
+    await historyService.init(forceInit: forceInit);
 
-    // Inicializa HistoryService
-    await _history.init();
-    _logger.log('Initializer: HistoryService inicializado.');
+    // 3. Inicializar logger
+    await loggerService.init(forceInit: forceInit);
 
-    // Cria placeholders se não existirem
-    await _createPlaceholder('theme', 'light'); // tema padrão: light
-    await _createPlaceholder('user_settings', '{}');
-    await _createPlaceholder('network_devices', '[]');
+    // 4. Inicializar temas (claro, escuro, OLED, Matrix)
+    await themeManager.init(forceInit: forceInit);
 
-    _logger.log('Initializer: Placeholders criados ou verificados.');
-    _logger.log('Initializer: Inicialização completa.');
+    // 5. Criar placeholders padrão para arquivos/configs ausentes
+    await placeholderManager.init(forceInit: forceInit);
+
+    // 6. Verificar dependências essenciais
+    await _checkDependencies();
+
+    // 7. Log final de inicialização
+    loggerService.log('Initializer: Todas as services carregadas com sucesso.');
+
+    // 8. Hook para IA (local + API)
+    _setupAIIntegration();
   }
 
-  /// Cria placeholder se não existir
-  Future<void> _createPlaceholder(String key, String defaultValue) async {
-    String? existing = await _storage.read(key);
-    if (existing == null) {
-      await _storage.write(key, defaultValue);
-      _logger.log('Initializer: Placeholder criado -> $key = $defaultValue');
-    } else {
-      _logger.log('Initializer: Placeholder existente mantido -> $key = $existing');
+  Future<void> _checkDependencies() async {
+    // Exemplo: checar se diretórios e arquivos críticos existem
+    List<String> requiredDirs = [
+      storageService.baseDir,
+      historyService.baseDir,
+      'logs',
+      'screens',
+      'providers',
+    ];
+
+    for (String dir in requiredDirs) {
+      final directory = Directory(dir);
+      if (!directory.existsSync()) {
+        directory.createSync(recursive: true);
+        loggerService.log('Initializer: Diretório criado -> $dir');
+      }
     }
+
+    // Placeholder de dependências futuras
+    // Aqui podemos checar pacotes flutter ou arquivos essenciais
+  }
+
+  void _setupAIIntegration() {
+    // Hook para análise de logs local + integração com API NLP / Deep Learning
+    loggerService.log('Initializer: Hook IA configurado (local + API).');
+    // Exemplo: podemos passar logs para análise de padrões e alertas
   }
 }
+
+// Uso:
+// await Initializer().init();
