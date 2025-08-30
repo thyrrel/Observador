@@ -1,20 +1,13 @@
-// lib/services/theme_service.dart
-import 'logger_service.dart';
+enum AppTheme { light, dark, oled, matrix }
 
-class ThemeService {
-  static final ThemeService _instance = ThemeService._internal();
-  factory ThemeService() => _instance;
-  ThemeService._internal();
+class ThemeManager {
+  AppTheme currentTheme = AppTheme.light;
 
-  final List<String> availableThemes = ["claro", "escuro", "oled", "matrix"];
-  String currentTheme = "claro";
-
-  Future<void> init() async {
-    await LoggerService().log("Themes inicializados: ${availableThemes.join(", ")}");
+  void setTheme(AppTheme theme) {
+    currentTheme = theme;
   }
 
-  Future<void> setCurrentTheme(String themeName) async {
-    currentTheme = themeName;
-    await LoggerService().log("ThemeService: Tema atual definido para $themeName");
-  }
+  bool isDark() => currentTheme == AppTheme.dark;
+  bool isOled() => currentTheme == AppTheme.oled;
+  bool isMatrix() => currentTheme == AppTheme.matrix;
 }
