@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
               icon: Icons.smart_toy,
               title: 'AI Assistant',
               subtitle: 'Assistente IA',
-              onTap: () => Navigator.pushNamed(context, '/ai_assistant'),
+              onTap: () => Navigator.pushNamed(context, '/ai-assistant'),
             ),
             _buildCard(
               icon: Icons.settings,
@@ -69,9 +69,16 @@ class HomeScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 48, color: Colors.blue),
               const SizedBox(height: 12),
-              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 6),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(
+                subtitle,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
             ],
           ),
         ),
