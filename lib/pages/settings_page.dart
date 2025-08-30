@@ -1,3 +1,4 @@
+// lib/pages/settings_page.dart
 import 'package:flutter/material.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -8,7 +9,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  ThemeMode _themeMode = ThemeMode.system;
+  AppThemeMode _themeMode = AppThemeMode.system;
   final ThemeService _themeService = ThemeService();
 
   @override
@@ -20,11 +21,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadTheme() async {
     final mode = await _themeService.load();
     setState(() {
-      _themeMode = mode ?? ThemeMode.system;
+      _themeMode = mode ?? AppThemeMode.system;
     });
   }
 
-  Future<void> _saveTheme(ThemeMode mode) async {
+  Future<void> _saveTheme(AppThemeMode mode) async {
     await _themeService.save(mode);
   }
 
@@ -32,44 +33,65 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Configurações')),
-      body: Column(
-        children: [
-          ListTile(
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 3,
+          child: ListTile(
             title: const Text('Tema do Aplicativo'),
-            subtitle: Text(_themeMode.name),
-            trailing: DropdownButton<ThemeMode>(
+            subtitle: Text(_themeMode.label),
+            trailing: DropdownButton<AppThemeMode>(
               value: _themeMode,
               onChanged: (mode) async {
                 if (mode != null) {
-                  setState(() {
-                    _themeMode = mode;
-                  });
+                  setState(() => _themeMode = mode);
                   await _saveTheme(mode);
                 }
               },
-              items: ThemeMode.values.map((mode) {
+              items: AppThemeMode.values.map((mode) {
                 return DropdownMenuItem(
                   value: mode,
-                  child: Text(mode.name),
+                  child: Text(mode.label),
                 );
               }).toList(),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// Simulação de ThemeService para evitar erros
+/// 🔑 Enum personalizado para os 4 temas
+enum AppThemeMode { system, light, dark, oled, matrix }
+
+extension AppThemeModeExtension on AppThemeMode {
+  String get label {
+    switch (this) {
+      case AppThemeMode.system:
+        return "Sistema";
+      case AppThemeMode.light:
+        return "Claro";
+      case AppThemeMode.dark:
+        return "Escuro";
+      case AppThemeMode.oled:
+        return "OLED";
+      case AppThemeMode.matrix:
+        return "Matrix";
+    }
+  }
+}
+
+/// 🔑 Serviço para salvar e carregar preferências
 class ThemeService {
-  Future<ThemeMode?> load() async {
-    // Aqui poderia carregar do SharedPreferences ou armazenamento seguro
-    return ThemeMode.system;
+  Future<AppThemeMode?> load() async {
+    // Aqui pode carregar do SharedPreferences (simulado)
+    return AppThemeMode.system;
   }
 
-  Future<void> save(ThemeMode mode) async {
-    // Aqui poderia salvar no SharedPreferences ou armazenamento seguro
-    debugPrint('Tema salvo: ${mode.name}');
+  Future<void> save(AppThemeMode mode) async {
+    // Aqui pode salvar no SharedPreferences (simulado)
+    debugPrint('Tema salvo: ${mode.label}');
   }
 }
