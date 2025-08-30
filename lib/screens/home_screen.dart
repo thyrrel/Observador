@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<AppState>(context).themeData;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Observador Home')),
       body: Padding(
@@ -15,34 +19,39 @@ class HomeScreen extends StatelessWidget {
           mainAxisSpacing: 10,
           children: [
             _buildCard(
+              context,
               icon: Icons.dashboard,
               title: 'Dashboard',
               subtitle: 'Visualizar dados',
-              onTap: () => Navigator.pushNamed(context, '/dashboard'),
+              routeName: '/dashboard',
             ),
             _buildCard(
+              context,
               icon: Icons.network_check,
               title: 'Network',
               subtitle: 'Controle de rede',
-              onTap: () => Navigator.pushNamed(context, '/network'),
+              routeName: '/network',
             ),
             _buildCard(
+              context,
               icon: Icons.smart_toy,
               title: 'AI Assistant',
               subtitle: 'Assistente IA',
-              onTap: () => Navigator.pushNamed(context, '/ai_assistant'),
+              routeName: '/ai_assistant',
             ),
             _buildCard(
+              context,
               icon: Icons.settings,
               title: 'Settings',
               subtitle: 'Configurações',
-              onTap: () => Navigator.pushNamed(context, '/settings'),
+              routeName: '/settings',
             ),
             _buildCard(
+              context,
               icon: Icons.admin_panel_settings,
               title: 'Admin',
               subtitle: 'Painel Admin',
-              onTap: () => Navigator.pushNamed(context, '/admin'),
+              routeName: '/admin',
             ),
           ],
         ),
@@ -50,28 +59,39 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCard({
+  Widget _buildCard(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    required String routeName,
   }) {
+    final theme = Provider.of<AppState>(context).themeData;
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: theme.cardColor,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
+        onTap: () => Navigator.pushNamed(context, routeName),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 48, color: Colors.blue),
+              Icon(icon, size: 48, color: theme.colorScheme.secondary),
               const SizedBox(height: 12),
-              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.textTheme.bodyText1?.color)),
               const SizedBox(height: 6),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(subtitle,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: theme.textTheme.bodyText2?.color ?? Colors.grey)),
             ],
           ),
         ),
