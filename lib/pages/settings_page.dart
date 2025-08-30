@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/theme_provider.dart';
 import '../providers/app_state.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -8,11 +7,15 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final currentTheme = themeProvider.currentTheme;
+    final appState = Provider.of<AppState>(context);
+    final currentTheme = appState.theme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
+      appBar: AppBar(
+        title: const Text('Configurações'),
+        backgroundColor: appState.themeData.primaryColor,
+      ),
+      backgroundColor: appState.themeData.scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -22,8 +25,10 @@ class SettingsPage extends StatelessWidget {
               subtitle: Text(currentTheme.name),
               trailing: DropdownButton<AppTheme>(
                 value: currentTheme,
-                onChanged: (AppTheme? theme) {
-                  if (theme != null) themeProvider.setTheme(theme);
+                onChanged: (AppTheme? newTheme) {
+                  if (newTheme != null) {
+                    appState.setTheme(newTheme);
+                  }
                 },
                 items: AppTheme.values.map((theme) {
                   return DropdownMenuItem(
@@ -35,7 +40,11 @@ class SettingsPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => themeProvider.nextTheme(),
+              onPressed: () {
+                // Alterna para o próximo tema da lista
+                int nextIndex = (currentTheme.index + 1) % AppTheme.values.length;
+                appState.setTheme(AppTheme.values[nextIndex]);
+              },
               child: const Text('Alternar para próximo tema'),
             ),
           ],
