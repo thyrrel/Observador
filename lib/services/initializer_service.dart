@@ -1,76 +1,62 @@
-// lib/services/initializer.dart
+// lib/services/initializer_service.dart
 
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'storage_service.dart';
 import 'logger_service.dart';
-import '../providers/app_state.dart';
-import '../services/theme_service.dart';
+import 'ia_service.dart';
+import 'storage_service.dart';
+import 'theme_service.dart';
 
-class Initializer {
-  static final Initializer _instance = Initializer._internal();
+class InitializerService {
+  static final InitializerService _instance = InitializerService._internal();
+  factory InitializerService() => _instance;
+  InitializerService._internal();
 
-  factory Initializer() => _instance;
-
-  Initializer._internal();
-
-  final StorageService _storageService = StorageService();
   final LoggerService _logger = LoggerService();
-  final AppState _appState = AppState();
-  final ThemeService _themeService = ThemeService();
+  final IaService _ia = IaService();
+  final StorageService _storage = StorageService();
+  final ThemeService _theme = ThemeService();
 
-  // Inicialização completa do app
-  Future<void> initializeApp() async {
-    await _storageService.init();
+  late StreamSubscription<String> _logSubscription;
+
+  Future<void> initialize() async {
+    // Inicializa armazenamento seguro
+    await _storage.init();
+
+    // Inicializa temas
+    await _theme.init();
+
+    // Inicializa Logger
     await _logger.init();
-    await _appState.init();
-    await _themeService.init();
 
-    // Inicialização IA híbrida (local + API)
-    await _initializeIA();
+    // Inicializa IA
+    await _ia.initialize();
 
-    // Inicialização de módulos adicionais
-    await _initializeModules();
+    // Processa logs existentes
+    final logs = await _logger.getAllLogs();
+    for (var log in logs) {
+      await _ia.processLog(log);
+    }
 
-    // Observação de logs para depuração automática
-    _watchLogs();
-
-    _logger.log('Initializer: Todos os serviços carregados com sucesso.');
-  }
-
-  // Placeholder IA híbrida
-  Future<void> _initializeIA() async {
-    _logger.log('Inicializando IA híbrida (local + API)...');
-    // Ex.: carregar modelos locais + configurar API
-    // await IaService().init();
-  }
-
-  // Inicialização de módulos adicionais
-  Future<void> _initializeModules() async {
-    _logger.log('Inicializando módulos adicionais...');
-    // Ex.: Monitoramento de dispositivos, placeholders, etc.
-  }
-
-  // Observa o arquivo de logs e atualiza estado/depuração automaticamente
-  void _watchLogs() {
-    final logFile = File(_logger.logFilePath);
-    if (!logFile.existsSync()) return;
-
-    logFile.watch().listen((event) async {
-      if (event.type == FileSystemEvent.modify) {
-        final lines = await logFile.readAsLines();
-        final lastLine = lines.isNotEmpty ? lines.last : '';
-        _logger.log('Novo log detectado: $lastLine');
-        // Aqui você pode enviar para IA processar automaticamente
-        // await IaService().processLog(lastLine);
-      }
+    // Observa logs novos e envia automaticamente para IA
+    _logSubscription = _logger.logStream.listen((logLine) async {
+      await _ia.processLog(logLine);
     });
+
+    await _logger.log("Initializer: Sistema inicializado com sucesso.");
   }
 
-  // Getters globais para os serviços
-  StorageService get storage => _storageService;
-  LoggerService get logger => _logger;
-  AppState get appState => _appState;
-  ThemeService get theme => _themeService;
+  // Função para alterar tema dinamicamente (mantendo todos os quatro)
+  Future<void> setTheme(String themeName) async {
+    if (_theme.availableThemes.contains(themeName)) {
+      await _theme.setCurrentTheme(themeName);
+      await _logger.log("Tema alterado para: $themeName");
+    } else {
+      await _logger.log("Tema inválido solicitado: $themeName");
+    }
+  }
+
+  Future<void> dispose() async {
+    await _logSubscription.cancel();
+    await _logger.log("Initializer: Sistema finalizado.");
+  }
 }
