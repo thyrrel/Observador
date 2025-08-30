@@ -1,35 +1,23 @@
-// lib/services/logger_service.dart
-import 'dart:async';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'storage_service.dart';
 
 class LoggerService {
-  static final LoggerService _instance = LoggerService._internal();
-  factory LoggerService() => _instance;
-  LoggerService._internal();
+  final StorageService storageService;
+  final String _logKey = 'app_logs';
 
-  final StreamController<String> _controller = StreamController.broadcast();
-  Stream<String> get logStream => _controller.stream;
-
-  late File _logFile;
-
-  Future<void> init() async {
-    final dir = await getApplicationDocumentsDirectory();
-    _logFile = File("${dir.path}/logs.txt");
-    if (!await _logFile.exists()) {
-      await _logFile.create();
-    }
-  }
+  LoggerService({required this.storageService});
 
   Future<void> log(String message) async {
-    final timestamp = DateTime.now().toIso8601String();
-    final line = "[$timestamp] $message";
-    await _logFile.writeAsString("$line\n", mode: FileMode.append);
-    _controller.add(line);
+    final logs = await getLogs();
+    logs.add('${DateTime.now()}: $message');
+    await storageService.save(_logKey, logs.join('\n'));
   }
 
-  Future<List<String>> getAllLogs() async {
-    if (!await _logFile.exists()) return [];
-    return await _logFile.readAsLines();
+  Future<List<String>> getLogs() async {
+    final data = await storageService.read(_logKey);
+    return data?.split('\n') ?? [];
+  }
+
+  Future<void> clearLogs() async {
+    await storageService.delete(_logKey);
   }
 }
