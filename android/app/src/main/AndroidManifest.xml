@@ -1,43 +1,77 @@
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.thyrrel.observador">
 
-android {
-    namespace "com.thyrrel.Observador"
-    compileSdk 34
+    <!-- Permissões de rede -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
-    defaultConfig {
-        applicationId "com.thyrrel.Observador"
-        minSdk 24
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+    <!-- Bluetooth -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-    }
+    <!-- Execução em background -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-}
+    <!-- Notificações -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-dependencies {
-    implementation 'androidx.core:core-ktx:1.13.1'
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
-}
+    <application
+        android:label="Observador"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:allowBackup="true"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+        <!-- Atividade principal -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Serviço para background fetch / monitoramento -->
+        <service
+            android:name=".services.NetworkMonitorService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|connectedDevice|location" />
+
+        <!-- Receiver para iniciar com o boot -->
+        <receiver
+            android:name=".receivers.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Firebase Messaging -->
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
+        <!-- Firebase Init Provider -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            android:exported="false"
+            android:initOrder="100" />
+
+    </application>
+
+</manifest>
