@@ -2,58 +2,101 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../providers/dns_provider.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final theme = appState.theme;
+    final appState = context.watch<AppState>();
+    final dnsProvider = context.watch<DNSProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Configurações')),
       body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 3,
-          child: ListTile(
-            title: const Text('Tema do Aplicativo'),
-            subtitle: Text(_themeLabel(theme)),
-            trailing: DropdownButton<AppTheme>(
-              value: theme,
-              onChanged: (newTheme) {
-                if (newTheme != null) {
-                  appState.setTheme(newTheme);
-                }
-              },
-              items: AppTheme.values.map((mode) {
-                return DropdownMenuItem(
-                  value: mode,
-                  child: Text(_themeLabel(mode)),
-                );
-              }).toList(),
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: [
+            // Seção de Tema
+            ListTile(
+              title: const Text('Tema do Aplicativo'),
+              trailing: DropdownButton<AppTheme>(
+                value: appState.theme,
+                onChanged: (theme) {
+                  if (theme != null) appState.setTheme(theme);
+                },
+                items: AppTheme.values.map((theme) {
+                  return DropdownMenuItem(
+                    value: theme,
+                    child: Text(theme.name),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
+            const Divider(),
+
+            // Seção de DNS
+            ListTile(
+              title: const Text('DNS Primário'),
+              subtitle: Text(dnsProvider.primaryDNS),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _editDNS(context, dnsProvider, true),
+              ),
+            ),
+            ListTile(
+              title: const Text('DNS Secundário'),
+              subtitle: Text(dnsProvider.secondaryDNS),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _editDNS(context, dnsProvider, false),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => dnsProvider.resetDNS(),
+              child: const Text('Resetar DNS para padrão'),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  String _themeLabel(AppTheme mode) {
-    switch (mode) {
-      case AppTheme.Light:
-        return 'Claro';
-      case AppTheme.Dark:
-        return 'Escuro';
-      case AppTheme.OLED:
-        return 'OLED';
-      case AppTheme.Matrix:
-        return 'Matrix';
-      default:
-        return '';
-    }
+  void _editDNS(BuildContext context, DNSProvider provider, bool isPrimary) {
+    final controller = TextEditingController(
+      text: isPrimary ? provider.primaryDNS : provider.secondaryDNS,
+    );
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(isPrimary ? 'Editar DNS Primário' : 'Editar DNS Secundário'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Digite o servidor DNS'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                if (isPrimary) {
+                  provider.setPrimaryDNS(controller.text);
+                } else {
+                  provider.setSecondaryDNS(controller.text);
+                }
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
   }
 }
