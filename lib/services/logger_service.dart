@@ -1,23 +1,59 @@
+// lib/services/logger_service.dart
+
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class LoggerService {
   static final LoggerService _instance = LoggerService._internal();
+
   factory LoggerService() => _instance;
+
   LoggerService._internal();
 
-  final List<String> _logs = [];
+  late File _logFile;
+  String get logFilePath => _logFile.path;
 
-  void log(String message) {
-    final timestamp = DateTime.now().toIso8601String();
-    final entry = '[$timestamp] $message';
-    _logs.add(entry);
-    print(entry);
+  Future<void> init() async {
+    final directory = await getApplicationDocumentsDirectory();
+    _logFile = File('${directory.path}/observador_logs.txt');
+
+    if (!_logFile.existsSync()) {
+      await _logFile.create(recursive: true);
+    }
+
+    log('LoggerService: Inicializado.');
   }
 
-  List<String> getLogs() => List.unmodifiable(_logs);
+  // Função principal de log
+  Future<void> log(String message) async {
+    final timestamp = DateTime.now().toIso8601String();
+    final logLine = '[$timestamp] $message';
+    print(logLine); // Saída no console
 
-  void saveLogs(String filePath) {
-    final file = File(filePath);
-    file.writeAsStringSync(_logs.join('\n'), mode: FileMode.write);
+    await _logFile.writeAsString('$logLine\n', mode: FileMode.append);
+
+    // Aqui você pode chamar a IA híbrida para processar o log
+    // Ex.: await IaService().processLog(logLine);
+  }
+
+  // Limpa os logs
+  Future<void> clearLogs() async {
+    if (_logFile.existsSync()) {
+      await _logFile.writeAsString('');
+      log('LoggerService: Logs limpos.');
+    }
+  }
+
+  // Lê todos os logs
+  Future<List<String>> readLogs() async {
+    if (_logFile.existsSync()) {
+      return _logFile.readAsLines();
+    }
+    return [];
+  }
+
+  // Função de depuração rápida
+  Future<void> debug(String message) async {
+    await log('DEBUG: $message');
   }
 }
