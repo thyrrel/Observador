@@ -6,18 +6,18 @@ class NotificationService {
 
   Future<void> init() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: androidSettings);
-    await _plugin.initialize(settings);
+    const iosSettings = IOSInitializationSettings();
+    await _plugin.initialize(
+      const InitializationSettings(android: androidSettings, iOS: iosSettings),
+    );
   }
 
   Future<void> showNotification(String title, String body) async {
-    var androidDetails = const AndroidNotificationDetails(
-      'cortex_channel',
-      'C.O.R.T.E.X. Alerts',
-      importance: Importance.max,
-      priority: Priority.high,
+    const androidDetails = AndroidNotificationDetails(
+      'channel_id', 'Channel', channelDescription: 'Channel description',
+      importance: Importance.max, priority: Priority.high,
     );
-    var details = NotificationDetails(android: androidDetails);
-    await _plugin.show(0, title, body, details);
+    const platformDetails = NotificationDetails(android: androidDetails);
+    await _plugin.show(0, title, body, platformDetails);
   }
 }
