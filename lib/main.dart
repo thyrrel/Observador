@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
     final themeService = Provider.of<ThemeService>(context);
 
     return MaterialApp(
-      title: 'Guarda-costas WIFI',
+      title: 'Observador',
       debugShowCheckedModeBanner: false,
       theme: themeService.theme,
       home: const HomeScreen(),
