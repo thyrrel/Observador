@@ -1,89 +1,36 @@
-// lib/services/ia_service.dart
-
+// lib/services/history_service.dart
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'logger_service.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
-class IaService {
-  static final IaService _instance = IaService._internal();
-  factory IaService() => _instance;
-  IaService._internal();
+class HistoryService {
+  static final HistoryService _instance = HistoryService._internal();
+  factory HistoryService() => _instance;
+  HistoryService._internal();
 
-  final LoggerService _logger = LoggerService();
+  late File _historyFile;
 
-  // Configurações de IA
-  String localModelPath = "assets/ia/local_model.json"; // Exemplo de IA local
-  String apiEndpoint = "https://api.suaia.com/process"; // Exemplo de IA remota
-  String apiKey = "SUA_API_KEY_AQUI";
-
-  // Processa um log
-  Future<void> processLog(String logLine) async {
-    await _logger.debug("IA: Processando log...");
-
-    // Primeiro tenta IA local
-    final localDecision = await _processLocal(logLine);
-    if (localDecision != null) {
-      await _applyDecision(localDecision);
-      return;
-    }
-
-    // Se IA local não resolver, envia para API
-    final apiDecision = await _processApi(logLine);
-    if (apiDecision != null) {
-      await _applyDecision(apiDecision);
+  Future<void> init() async {
+    final dir = await getApplicationDocumentsDirectory();
+    _historyFile = File("${dir.path}/history.json");
+    if (!await _historyFile.exists()) {
+      await _historyFile.create();
+      await _historyFile.writeAsString(jsonEncode([]));
     }
   }
 
-  // IA local (exemplo simples: lê um JSON de padrões)
-  Future<String?> _processLocal(String logLine) async {
-    // Aqui você poderia ler o arquivo localModelPath e buscar padrões
-    // Exemplo simplificado:
-    if (logLine.contains("ERRO")) {
-      return "ALERTA: Verificar erro no log";
-    }
-    return null;
+  Future<List<Map<String, dynamic>>> getHistory() async {
+    final content = await _historyFile.readAsString();
+    return List<Map<String, dynamic>>.from(jsonDecode(content));
   }
 
-  // IA via API
-  Future<String?> _processApi(String logLine) async {
-    try {
-      final response = await http.post(
-        Uri.parse(apiEndpoint),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $apiKey",
-        },
-        body: jsonEncode({"log": logLine}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['action'] ?? null;
-      } else {
-        await _logger.debug(
-            "IA: Erro na API ${response.statusCode} - ${response.body}");
-        return null;
-      }
-    } catch (e) {
-      await _logger.debug("IA: Exceção na API - $e");
-      return null;
-    }
+  Future<void> addEntry(Map<String, dynamic> entry) async {
+    final history = await getHistory();
+    history.add(entry);
+    await _historyFile.writeAsString(jsonEncode(history));
   }
 
-  // Aplica a decisão da IA
-  Future<void> _applyDecision(String decision) async {
-    await _logger.log("IA decidiu: $decision");
-    // Aqui você pode adicionar ações automáticas, ex:
-    // - Bloquear dispositivos suspeitos
-    // - Ajustar configurações
-    // - Notificar usuário
-  }
-
-  // Processa todos os logs existentes
-  Future<void> processAllLogs() async {
-    final logs = await _logger.readLogs();
-    for (var log in logs) {
-      await processLog(log);
-    }
+  Future<void> clearHistory() async {
+    await _historyFile.writeAsString(jsonEncode([]));
   }
 }
