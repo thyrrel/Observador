@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/router_service.dart';
-import '../services/ia_service.dart';
+import '../providers/device_provider.dart';
+import '../providers/app_state.dart';
 import '../models/device_model.dart';
+import '../services/router_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,33 +14,23 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late RouterService routerService;
-  late IAService iaService;
   List<DeviceModel> devices = [];
 
   @override
   void initState() {
     super.initState();
-    routerService = Provider.of<RouterService>(context, listen: false);
-    iaService = Provider.of<IAService>(context, listen: false);
-
+    routerService = RouterService(); // Pode ser substituído por provider se necessário
     _loadDevices();
-    _startTrafficMonitoring();
   }
 
   void _loadDevices() async {
-    devices = await routerService.getDevices(); // Tráfego real
+    final provider = Provider.of<DeviceProvider>(context, listen: false);
+    devices = provider.devices;
     setState(() {});
-    iaService.analyzeDevices(devices);
-  }
-
-  void _startTrafficMonitoring() {
-    routerService.monitorTraffic((usage) {
-      iaService.analyzeTraffic(devices, usage);
-    });
   }
 
   void _editDeviceName(DeviceModel device) async {
-    TextEditingController controller = TextEditingController(text: device.name);
+    final controller = TextEditingController(text: device.name);
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -48,10 +39,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              setState(() {
-                device.name = controller.text;
-              });
-              routerService.updateDevice(device);
+              setState(() => device.name = controller.text);
+              Provider.of<DeviceProvider>(context, listen: false)
+                  .toggleBlockDevice(device); // Atualiza provider
+              routerService.updateDevice(device); // Persistência
               Navigator.pop(context);
             },
             child: const Text('Salvar'),
@@ -61,21 +52,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildDeviceTile(DeviceModel device) {
+    IconData icon;
+    switch (device.type.toLowerCase()) {
+      case 'phone':
+        icon = Icons.smartphone;
+        break;
+      case 'laptop':
+        icon = Icons.laptop;
+        break;
+      case 'printer':
+        icon = Icons.print;
+        break;
+      default:
+        icon = Icons.devices;
+    }
+
+    return ListTile(
+      leading: Icon(icon, color: Colors.blueAccent),
+      title: Text(device.name),
+      subtitle: Text('${device.type} • ${device.ip}'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => _editDeviceName(device),
+          ),
+          Switch(
+            value: device.isBlocked,
+            onChanged: (val) {
+              Provider.of<DeviceProvider>(context, listen: false)
+                  .toggleBlockDevice(device);
+              setState(() => device.isBlocked = val);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard Observador')),
-      body: ListView.builder(
-        itemCount: devices.length,
-        itemBuilder: (_, index) {
-          final device = devices[index];
-          return ListTile(
-            title: Text(device.name),
-            subtitle: Text('${device.type} • ${device.ip}'),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _editDeviceName(device),
-            ),
+      appBar: AppBar(
+        title: const Text('Dashboard Observador'),
+        backgroundColor: appState.themeData.primaryColor,
+      ),
+      body: Consumer<DeviceProvider>(
+        builder: (_, provider, __) {
+          devices = provider.devices;
+          return ListView.builder(
+            itemCount: devices.length,
+            itemBuilder: (_, index) => _buildDeviceTile(devices[index]),
           );
         },
       ),
