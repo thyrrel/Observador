@@ -1,58 +1,65 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+// [Flutter] lib/services/router_service.dart
+import 'package:flutter/material.dart';
+import '../adapters/router_unified_adapter.dart';
+import '../models/device_model.dart';
 
-class RouterService {
-  // Lista de roteadores suportados e credenciais padrão
-  final Map<String, Map<String, String>> routers = {
-    'Huawei': {'ip': '192.168.3.1', 'user': 'admin', 'pass': 'admin'},
-    'TPLink': {'ip': '192.168.0.1', 'user': 'admin', 'pass': 'admin'},
-    'Xiaomi': {'ip': '192.168.31.1', 'user': 'admin', 'pass': 'admin'},
-    'Asus': {'ip': '192.168.1.1', 'user': 'admin', 'pass': 'admin'},
-  };
+class RouterService extends ChangeNotifier {
+  final Map<String, RouterUnifiedAdapter> _adapters = {};
+  final Map<String, String> _tokens = {};
 
-  Future<bool> login(String brand) async {
-    if (!routers.containsKey(brand)) return false;
-    final router = routers[brand]!;
-    try {
-      // Exemplo de login genérico (ajustar conforme API de cada marca)
-      final response = await http.post(
-        Uri.parse('http://${router['ip']}/login'),
-        body: jsonEncode({'username': router['user'], 'password': router['pass']}),
-        headers: {'Content-Type': 'application/json'},
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
+  // Registrar roteador com IP e tipo
+  void registerRouter(String ip, RouterType type) {
+    _adapters[ip] = RouterUnifiedAdapter(type);
   }
 
-  Future<bool> prioritizeDevice(String mac, {int priority = 100}) async {
-    for (var brand in routers.keys) {
-      if (!await login(brand)) continue;
-      final router = routers[brand]!;
-      try {
-        // Exemplo de configuração de QoS genérico
-        final response = await http.post(
-          Uri.parse('http://${router['ip']}/qos'),
-          body: jsonEncode({'mac': mac, 'priority': priority}),
-          headers: {'Content-Type': 'application/json'},
-        );
-        if (response.statusCode == 200) return true;
-      } catch (_) {
-        continue;
-      }
+  // Login para um roteador específico
+  Future<bool> login(String ip, String username, String password) async {
+    final adapter = _adapters[ip];
+    if (adapter == null) return false;
+
+    final token = await adapter.login(ip, username, password);
+    if (token != null) {
+      _tokens[ip] = token;
+      notifyListeners();
+      return true;
     }
     return false;
   }
 
-  Future<bool> rebootRouter(String brand) async {
-    if (!routers.containsKey(brand)) return false;
-    if (!await login(brand)) return false;
-    final router = routers[brand]!;
-    try {
-      final response = await http.post(
-        Uri.parse('http://${router['ip']}/reboot'),
-        headers: {'Content-Type': 'application/json'},
-      );
-      return response.statusCode == 200;
-    } catch (e
+  // Obter clientes conectados
+  Future<List<RouterDevice>> getClients(String ip) async {
+    final adapter = _adapters[ip];
+    final token = _tokens[ip];
+    if (adapter == null || token == null) return [];
+    return adapter.getClients(ip, token);
+  }
+
+  // Bloquear dispositivo
+  Future<bool> blockDevice(String ip, String mac) async {
+    final adapter = _adapters[ip];
+    final token = _tokens[ip];
+    if (adapter == null || token == null) return false;
+    final success = await adapter.blockDevice(ip, token, mac);
+    if (success) notifyListeners();
+    return success;
+  }
+
+  // Limitar dispositivo
+  Future<bool> limitDevice(String ip, String mac, int kbps) async {
+    final adapter = _adapters[ip];
+    final token = _tokens[ip];
+    if (adapter == null || token == null) return false;
+    final success = await adapter.limitDevice(ip, token, mac, kbps);
+    if (success) notifyListeners();
+    return success;
+  }
+
+  // Função auxiliar: prioridade (pode ser implementada conforme adapter)
+  Future<bool> prioritizeDevice(String ip, String mac, {int priority = 100}) async {
+    // Muitos routers não possuem endpoint direto, podemos simular via limit
+    return limitDevice(ip, mac, priority * 1024); // kbps
+  }
+
+  // Verificar se roteador está logado
+  bool isLogged(String ip) => _tokens.containsKey(ip);
+}
