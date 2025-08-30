@@ -1,18 +1,20 @@
 // lib/services/theme_service.dart
-import 'package:flutter/material.dart';
-import 'storage_service.dart';
+import 'logger_service.dart';
 
 class ThemeService {
-  final StorageService _storageService = StorageService();
+  static final ThemeService _instance = ThemeService._internal();
+  factory ThemeService() => _instance;
+  ThemeService._internal();
 
-  Future<void> saveTheme(ThemeMode mode) async {
-    await _storageService.write('theme', mode.toString());
+  final List<String> availableThemes = ["claro", "escuro", "oled", "matrix"];
+  String currentTheme = "claro";
+
+  Future<void> init() async {
+    await LoggerService().log("Themes inicializados: ${availableThemes.join(", ")}");
   }
 
-  Future<ThemeMode> loadTheme() async {
-    final value = await _storageService.read('theme');
-    if (value == ThemeMode.dark.toString()) return ThemeMode.dark;
-    if (value == ThemeMode.light.toString()) return ThemeMode.light;
-    return ThemeMode.system;
+  Future<void> setCurrentTheme(String themeName) async {
+    currentTheme = themeName;
+    await LoggerService().log("ThemeService: Tema atual definido para $themeName");
   }
 }
