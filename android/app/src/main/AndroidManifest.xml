@@ -1,16 +1,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.thyrrel.Observador">
+    package="com.thyrrel.observador">
 
+    <!-- Permissões necessárias -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
         android:label="Observador"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+
+        <!-- MainActivity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -28,10 +35,10 @@
             </intent-filter>
         </activity>
 
-        <!-- Configuração Firebase -->
+        <!-- Firebase Configuration -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_launcher"/>
+            android:resource="@drawable/ic_stat_ic_notification"/>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/colorAccent"/>
