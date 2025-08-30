@@ -10,7 +10,11 @@ class HomeScreen extends StatelessWidget {
     final theme = Provider.of<AppState>(context).themeData;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Observador Home')),
+      appBar: AppBar(
+        title: const Text('Observador Home'),
+        backgroundColor: theme.primaryColor,
+      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.count(
@@ -19,39 +23,44 @@ class HomeScreen extends StatelessWidget {
           mainAxisSpacing: 10,
           children: [
             _buildCard(
-              context,
+              context: context,
               icon: Icons.dashboard,
               title: 'Dashboard',
               subtitle: 'Visualizar dados',
-              routeName: '/dashboard',
+              route: '/dashboard',
+              theme: theme,
             ),
             _buildCard(
-              context,
+              context: context,
               icon: Icons.network_check,
               title: 'Network',
               subtitle: 'Controle de rede',
-              routeName: '/network',
+              route: '/network',
+              theme: theme,
             ),
             _buildCard(
-              context,
+              context: context,
               icon: Icons.smart_toy,
               title: 'AI Assistant',
               subtitle: 'Assistente IA',
-              routeName: '/ai_assistant',
+              route: '/ai_assistant',
+              theme: theme,
             ),
             _buildCard(
-              context,
+              context: context,
               icon: Icons.settings,
               title: 'Settings',
               subtitle: 'Configurações',
-              routeName: '/settings',
+              route: '/settings',
+              theme: theme,
             ),
             _buildCard(
-              context,
+              context: context,
               icon: Icons.admin_panel_settings,
               title: 'Admin',
               subtitle: 'Painel Admin',
-              routeName: '/admin',
+              route: '/admin',
+              theme: theme,
             ),
           ],
         ),
@@ -59,22 +68,21 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCard(
-    BuildContext context, {
+  Widget _buildCard({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String subtitle,
-    required String routeName,
+    required String route,
+    required ThemeData theme,
   }) {
-    final theme = Provider.of<AppState>(context).themeData;
-
     return Card(
+      color: theme.cardColor,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: theme.cardColor,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.pushNamed(context, routeName),
+        onTap: () => Navigator.pushNamed(context, route),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -83,15 +91,10 @@ class HomeScreen extends StatelessWidget {
               Icon(icon, size: 48, color: theme.colorScheme.secondary),
               const SizedBox(height: 12),
               Text(title,
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: theme.textTheme.bodyText1?.color)),
+                  style: theme.textTheme.headline6
+                      ?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
-              Text(subtitle,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: theme.textTheme.bodyText2?.color ?? Colors.grey)),
+              Text(subtitle, style: theme.textTheme.bodyText2),
             ],
           ),
         ),
