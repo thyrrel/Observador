@@ -2,7 +2,15 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StorageService {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static final StorageService _instance = StorageService._internal();
+  factory StorageService() => _instance;
+  StorageService._internal();
+
+  final _storage = FlutterSecureStorage();
+
+  Future<void> init() async {
+    // Inicialização de armazenamento seguro
+  }
 
   Future<void> write(String key, String value) async {
     await _storage.write(key: key, value: value);
@@ -14,9 +22,5 @@ class StorageService {
 
   Future<void> delete(String key) async {
     await _storage.delete(key: key);
-  }
-
-  Future<void> clear() async {
-    await _storage.deleteAll();
   }
 }
