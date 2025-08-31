@@ -32,39 +32,30 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Inicializador
-        id: iniciador
+      - name: Run Inicializador + Initializer
         run: |
           set -e
-          echo "==== Rodando Iniciador ===="
+          echo "==== Rodando Iniciador + Initializer ===="
           flutter run ./iniciador.dart --release
 
-      - name: Run Initializer
-        if: ${{ steps.iniciador.outcome == 'success' }}
-        id: initializer
-        run: |
-          set -e
-          echo "==== Rodando Initializer para validar placeholders e serviços ===="
-          flutter run lib/service/initializer.dart --release
-
       - name: Analyze code
-        if: ${{ steps.initializer.outcome == 'success' }}
+        if: ${{ success() }}
         run: flutter analyze
 
       - name: Run tests
-        if: ${{ steps.initializer.outcome == 'success' }}
+        if: ${{ success() }}
         run: flutter test --coverage
 
       - name: Build APK (release)
-        if: ${{ steps.initializer.outcome == 'success' }}
+        if: ${{ success() }}
         run: flutter build apk --release
 
       - name: Build AppBundle (release)
-        if: ${{ steps.initializer.outcome == 'success' }}
+        if: ${{ success() }}
         run: flutter build appbundle --release
 
       - name: Upload build artifacts
-        if: ${{ steps.initializer.outcome == 'success' }}
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: build-outputs
