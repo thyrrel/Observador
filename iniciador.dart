@@ -1,15 +1,15 @@
 // File: iniciador.dart
 import 'package:flutter/material.dart';
-import 'lib/services/initializer.dart';
-import 'lib/services/storage_service.dart';
-import 'lib/services/theme_service.dart';
-import 'lib/services/notification_service.dart';
-import 'lib/services/device_service.dart';
-import 'lib/services/remote_ai_service.dart';
-import 'lib/services/history_service.dart';
-import 'lib/providers/network_provider.dart';
-import 'lib/widgets/device_tile.dart';
-import 'lib/screens/main_screen.dart';
+import 'services/storage_service.dart';
+import 'services/theme_service.dart';
+import 'services/notification_service.dart';
+import 'services/device_service.dart';
+import 'services/remote_ai_service.dart';
+import 'services/history_service.dart';
+import 'providers/network_provider.dart';
+import 'widgets/device_tile.dart';
+import 'screens/main_screen.dart';
+import 'services/initializer.dart';
 
 /// Inicializador do Projeto Observador
 class Iniciador {
@@ -26,47 +26,43 @@ class Iniciador {
 
   Iniciador._internal() {
     _initServices();
+    _runInitializer();
   }
 
-  /// Inicializa todos os serviços essenciais
   void _initServices() {
-    // Serviços básicos
     storageService = StorageService();
     themeService = ThemeService();
     notificationService = NotificationService();
-
-    // Serviços de dados e IA
     deviceService = DeviceService(storageService: storageService);
     remoteAIService = RemoteAIService(storageService: storageService);
     historyService = HistoryService(storageService: storageService);
-
-    // Provider de rede
     networkProvider = NetworkProvider(deviceService: deviceService);
 
-    // Inicializa notificações
     notificationService.init();
-
-    // Inicializa temas
     themeService.initThemes();
-
-    // Inicializa logs e histórico
     historyService.initHistory();
   }
 
-  /// Inicializa o app e chama o initializer
-  void runAppWithInit() async {
+  void _runInitializer() {
+    Initializer().checkAndFix(_allServices());
+  }
+
+  Map<String, dynamic> _allServices() => {
+        'storageService': storageService,
+        'themeService': themeService,
+        'notificationService': notificationService,
+        'deviceService': deviceService,
+        'remoteAIService': remoteAIService,
+        'historyService': historyService,
+        'networkProvider': networkProvider,
+      };
+
+  void runAppWithInit() {
     runApp(MaterialApp(
       title: 'Observador',
       theme: themeService.getTheme('claro'),
       darkTheme: themeService.getTheme('escuro'),
       home: MainScreen(networkProvider: networkProvider),
     ));
-
-    // Chama o Initializer depois que o app está em execução
-    await Initializer().run(storageService, themeService, notificationService, deviceService, remoteAIService, historyService);
   }
-}
-
-void main() {
-  Iniciador().runAppWithInit();
 }
