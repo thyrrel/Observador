@@ -32,11 +32,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Inicializador + Initializer
+      - name: Run Inicializador (Dart)
         run: |
           set -e
-          echo "==== Rodando Iniciador + Initializer ===="
-          flutter run ./iniciador.dart --release
+          echo "==== Rodando Iniciador sem device ===="
+          dart ./iniciador.dart
 
       - name: Analyze code
         if: ${{ success() }}
