@@ -1,31 +1,27 @@
-// File: lib/services/initializer.dart
-import 'storage_service.dart';
-import 'theme_service.dart';
-import 'notification_service.dart';
-import 'device_service.dart';
-import 'remote_ai_service.dart';
-import 'history_service.dart';
-import '../../providers/network_provider.dart';
+// File: lib/service/initializer.dart
+import '../services/storage_service.dart';
+import '../services/theme_service.dart';
+import '../services/notification_service.dart';
+import '../services/device_service.dart';
+import '../services/remote_ai_service.dart';
+import '../services/history_service.dart';
+import '../providers/network_provider.dart';
 
-/// Verifica e corrige serviços e placeholders
 class Initializer {
-  static final Initializer _instance = Initializer._internal();
-  factory Initializer() => _instance;
-
-  Initializer._internal();
-
-  void checkAndFix(Map<String, dynamic> services) {
-    services['storageService'] ??= StorageService();
-    services['themeService'] ??= ThemeService();
-    services['notificationService'] ??= NotificationService();
-    services['deviceService'] ??= DeviceService(storageService: services['storageService']);
-    services['remoteAIService'] ??= RemoteAIService(storageService: services['storageService']);
-    services['historyService'] ??= HistoryService(storageService: services['storageService']);
-    services['networkProvider'] ??= NetworkProvider(deviceService: services['deviceService']);
-
-    // Inicializações adicionais de segurança e placeholders
-    services['notificationService'].init();
-    services['themeService'].initThemes();
-    services['historyService'].initHistory();
+  void checkAndCreatePlaceholders({
+    required StorageService storageService,
+    required ThemeService themeService,
+    required NotificationService notificationService,
+    required DeviceService deviceService,
+    required RemoteAIService remoteAIService,
+    required HistoryService historyService,
+    required NetworkProvider networkProvider,
+  }) {
+    deviceService ??= DeviceService(storageService: storageService);
+    remoteAIService ??= RemoteAIService(storageService: storageService);
+    themeService ??= ThemeService();
+    notificationService ??= NotificationService();
+    historyService ??= HistoryService(storageService: storageService);
+    networkProvider ??= NetworkProvider(deviceService: deviceService);
   }
 }
