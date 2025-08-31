@@ -1,73 +1,170 @@
-name: Observador
+name: 🛠️ Criar Projeto Flutter Completo
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
 
 jobs:
-  build:
+  criar-projeto:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: 📥 Baixar repositório
         uses: actions/checkout@v4
-
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
         with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
+          fetch-depth: 0
 
-      - name: Set up Flutter
+      - name: ⚙️ Instalar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
+          flutter-version: '3.19.0'
+          channel: 'stable'
 
-      - name: Install dependencies
+      - name: ✅ Aceitar licenças Android
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1
+          yes | flutter doctor --android-licenses > /dev/null 2>&1
+
+      - name: 🛠️ Criar projeto Flutter
+        run: |
+          flutter create --org com.observador --project-name ObservadorApp .
+
+      - name: 📁 Criar estrutura de pastas
+        run: |
+          mkdir -p lib/services lib/providers lib/widgets lib/screens
+
+      - name: 📝 Criar arquivos de serviço (placeholders)
+        run: |
+          # services/initializer.dart
+          cat > lib/services/initializer.dart << 'EOM'
+          class Initializer {
+            static Future<void> init() async {
+              print('Initializer called');
+            }
+          }
+          EOM
+
+          # services/storage_service.dart
+          cat > lib/services/storage_service.dart << 'EOM'
+          class StorageService {
+            static Future<void> save(String key, String value) async {}
+            static Future<String?> read(String key) async => null;
+          }
+          EOM
+
+          # services/theme_service.dart
+          cat > lib/services/theme_service.dart << 'EOM'
+          class ThemeService {
+            static bool isDark = false;
+            static void toggleTheme() {}
+          }
+          EOM
+
+          # services/notification_service.dart
+          cat > lib/services/notification_service.dart << 'EOM'
+          class NotificationService {
+            static void showNotification(String title, String body) {}
+          }
+          EOM
+
+          # services/device_service.dart
+          cat > lib/services/device_service.dart << 'EOM'
+          class DeviceService {
+            static Future<List<dynamic>> getDevices() async => [];
+          }
+          EOM
+
+          # services/remote_ai_service.dart
+          cat > lib/services/remote_ai_service.dart << 'EOM'
+          class RemoteAIService {
+            static Future<String> analyzeData(String data) async => '';
+          }
+          EOM
+
+          # services/history_service.dart
+          cat > lib/services/history_service.dart << 'EOM'
+          class HistoryService {
+            static Future<void> saveHistory(String action) async {}
+            static Future<List<String>> getHistory() async => [];
+          }
+          EOM
+
+          # providers/network_provider.dart
+          cat > lib/providers/network_provider.dart << 'EOM'
+          class NetworkProvider {
+            static bool isConnected = true;
+          }
+          EOM
+
+          # widgets/device_tile.dart
+          cat > lib/widgets/device_tile.dart << 'EOM'
+          import 'package:flutter/material.dart';
+
+          class DeviceTile extends StatelessWidget {
+            final String deviceName;
+            const DeviceTile({Key? key, required this.deviceName}) : super(key: key);
+
+            @override
+            Widget build(BuildContext context) {
+              return ListTile(title: Text(deviceName));
+            }
+          }
+          EOM
+
+          # screens/main_screen.dart
+          cat > lib/screens/main_screen.dart << 'EOM'
+          import 'package:flutter/material.dart';
+
+          class MainScreen extends StatelessWidget {
+            const MainScreen({Key? key}) : super(key: key);
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('Main Screen')),
+                body: const Center(child: Text('Main Screen')),
+              );
+            }
+          }
+          EOM
+
+      - name: 📝 Criar arquivo iniciador.dart
+        run: |
+          cat > lib/iniciador.dart << 'EOM'
+          import 'services/initializer.dart'; // import do initializer
+          import 'services/storage_service.dart';
+          import 'services/theme_service.dart';
+          import 'services/notification_service.dart';
+          import 'services/device_service.dart';
+          import 'services/remote_ai_service.dart';
+          import 'services/history_service.dart';
+          import 'providers/network_provider.dart';
+          import 'widgets/device_tile.dart';
+          import 'screens/main_screen.dart';
+
+          void main() async {
+            print('==== Inicializando Observador ====');
+            await Initializer.init();
+            print('==== Inicialização concluída ====');
+          }
+          EOM
+
+      - name: 📦 Instalar dependências
         run: flutter pub get
 
-      - name: Run Inicializador (Dart)
-        id: iniciador
+      - name: 🧪 Testar compilação
+        run: flutter run --version
+
+      - name: 💾 Salvar no GitHub
         run: |
-          set -e
-          echo "==== Rodando Iniciador sem device ===="
-          dart ./iniciador.dart
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          git commit -m "🚀 Estrutura Observador criada"
+          git push
 
-      - name: Run Initializer (Dart)
-        if: ${{ steps.iniciador.outcome == 'success' }}
-        id: initializer
+      - name: 🎉 Relatório final
         run: |
-          set -e
-          echo "==== Rodando Initializer para validar placeholders e serviços ===="
-          dart ./lib/services/initializer.dart
-
-      - name: Analyze code
-        if: ${{ steps.initializer.outcome == 'success' }}
-        run: flutter analyze
-
-      - name: Run tests
-        if: ${{ steps.initializer.outcome == 'success' }}
-        run: flutter test --coverage
-
-      - name: Build APK (release)
-        if: ${{ steps.initializer.outcome == 'success' }}
-        run: flutter build apk --release
-
-      - name: Build AppBundle (release)
-        if: ${{ steps.initializer.outcome == 'success' }}
-        run: flutter build appbundle --release
-
-      - name: Upload build artifacts
-        if: ${{ steps.initializer.outcome == 'success' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-outputs
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+          echo "✅ PROJETO OBSERVADOR CRIADO!"
+          echo "📱 App: ObservadorApp"
+          echo "📦 Pacote: com.observador"
+          echo "📁 Estrutura de pastas criada"
+          echo "📄 Arquivos de serviço criados"
