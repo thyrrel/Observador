@@ -37,7 +37,7 @@ jobs:
         run: |
           set -e
           echo "==== Rodando Iniciador ===="
-          flutter run lib/iniciador.dart --release
+          flutter run ./iniciador.dart --release
 
       - name: Run Initializer
         if: ${{ steps.iniciador.outcome == 'success' }}
@@ -45,7 +45,7 @@ jobs:
         run: |
           set -e
           echo "==== Rodando Initializer para validar placeholders e serviços ===="
-          flutter run lib/services/initializer.dart --release
+          flutter run lib/service/initializer.dart --release
 
       - name: Analyze code
         if: ${{ steps.initializer.outcome == 'success' }}
