@@ -1,14 +1,14 @@
-// File: iniciador.dart
+// File: lib/iniciador.dart
 import 'package:flutter/material.dart';
-import 'services/storage_service.dart';
-import 'services/theme_service.dart';
-import 'services/notification_service.dart';
-import 'services/device_service.dart';
-import 'services/remote_ai_service.dart';
-import 'services/history_service.dart';
-import 'providers/network_provider.dart';
-import 'widgets/device_tile.dart';
-import 'screens/main_screen.dart';
+import 'package:observador/services/storage_service.dart';
+import 'package:observador/services/theme_service.dart';
+import 'package:observador/services/notification_service.dart';
+import 'package:observador/services/device_service.dart';
+import 'package:observador/services/remote_ai_service.dart';
+import 'package:observador/services/history_service.dart';
+import 'package:observador/providers/network_provider.dart';
+import 'package:observador/widgets/device_tile.dart';
+import 'package:observador/screens/main_screen.dart';
 
 /// Inicializador do Projeto Observador
 class Iniciador {
