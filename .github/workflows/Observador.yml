@@ -2,9 +2,9 @@ name: Observador
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   build_android:
@@ -12,95 +12,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
+      - name: Checkout do código
         uses: actions/checkout@v4
 
       - name: Configurar Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.28.1' # atualizado para Dart >=3.8
+          flutter-version: '3.28.1'
+          channel: 'stable'
 
-      - name: Atualizar dependências
-        run: flutter pub upgrade --major-versions
+      - name: Verificar versão do Flutter
+        run: flutter --version
 
       - name: Instalar dependências
         run: flutter pub get
 
+      - name: Analisar código
+        run: flutter analyze
+
+      - name: Executar testes
+        run: flutter test
+
       - name: Build APK
         run: flutter build apk --release
 
-      # -----------------------------
-      # 🚀 Build App Bundle (.aab) - Mantido comentado
-      # -----------------------------
-      # - name: Build App Bundle (.aab)
-      #   run: flutter build appbundle --release
-
-      # -----------------------------
-      # 🚀 Upload APK
-      # -----------------------------
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
-
-      # -----------------------------
-      # 🚀 Upload AAB - Mantido comentado
-      # -----------------------------
-      # - name: Upload AAB
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: android-aab
-      #     path: build/app/outputs/bundle/release/app-release.aab
-      #     retention-days: 7
-
-      # -----------------------------
-      # 🚀 Publicação na Google Play - Mantido comentado
-      # -----------------------------
-      # - name: Deploy to Google Play
-      #   uses: r0adkll/upload-google-play@v1
-      #   with:
-      #     serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
-      #     packageName: com.thyrrel.observador
-      #     releaseFiles: build/app/outputs/bundle/release/app-release.aab
-      #     track: internal
-      #     status: completed
-
-# -----------------------------
-# iOS temporariamente comentado
-# -----------------------------
-# build_ios:
-#   name: Build iOS
-#   runs-on: macos-latest
-#
-#   steps:
-#     - name: Checkout código
-#       uses: actions/checkout@v4
-#
-#     - name: Configurar Flutter
-#       uses: subosito/flutter-action@v2
-#       with:
-#         flutter-version: '3.28.1'
-#
-#     - name: Atualizar dependências
-#       run: flutter pub upgrade --major-versions
-#
-#     - name: Instalar dependências
-#       run: flutter pub get
-#
-#     - name: Build iOS (sem assinatura)
-#       run: flutter build ios --release --no-codesign
-#
-#     - name: Upload artefatos iOS
-#       uses: actions/upload-artifact@v4
-#       with:
-#         name: ios-build
-#         path: build/ios/iphoneos
-#         retention-days: 7
