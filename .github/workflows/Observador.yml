@@ -28,8 +28,8 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
-      - name: Run Iniciador
-        run: flutter run -t lib/iniciador.dart --release
+      - name: Run Inicializador
+        run: flutter pub run dart lib/iniciador.dart
 
       - name: Build APK (release)
         run: flutter build apk --release
