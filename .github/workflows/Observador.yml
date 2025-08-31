@@ -19,14 +19,14 @@ jobs:
         with:
           flutter-version: "3.24.0"
 
-      - name: Run Inicializador
-        run: flutter run -t lib/iniciador.dart --no-sound-null-safety --release
-
-      - name: Run Initializer
-        run: flutter run -t lib/initializer.dart --no-sound-null-safety --release
-
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Run Inicializador
+        run: dart lib/iniciador.dart
+
+      - name: Run Initializer
+        run: dart lib/initializer.dart
 
       - name: Analyze code
         run: flutter analyze
