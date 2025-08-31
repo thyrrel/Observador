@@ -28,11 +28,14 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
+      - name: Run Iniciador
+        run: flutter run -t lib/iniciador.dart --release
+
       - name: Build APK (release)
-        run: flutter build apk --release -t lib/iniciador.dart
+        run: flutter build apk --release
 
       - name: Build AppBundle (release)
-        run: flutter build appbundle --release -t lib/iniciador.dart
+        run: flutter build appbundle --release
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
