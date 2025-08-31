@@ -22,10 +22,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Inicializador
-        run: dart lib/iniciador.dart
+      - name: Run Inicializador (raiz)
+        run: dart iniciador.dart
 
-      - name: Run Initializer
+      - name: Run Initializer (lib)
         run: dart lib/initializer.dart
 
       - name: Analyze code
