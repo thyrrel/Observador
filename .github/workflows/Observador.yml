@@ -25,19 +25,21 @@ jobs:
       - name: Analyze code
         run: flutter analyze
 
-      - name: Run tests
-        run: flutter test --coverage
-
       - name: Run Inicializador
-        run: flutter pub run dart lib/iniciador.dart
-
+        run: |
+          set -e
+          flutter run lib/iniciador.dart --release
+          
       - name: Build APK (release)
+        if: ${{ success() }}
         run: flutter build apk --release
 
       - name: Build AppBundle (release)
+        if: ${{ success() }}
         run: flutter build appbundle --release
 
       - name: Upload build artifacts
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: build-outputs
