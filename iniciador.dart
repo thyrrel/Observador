@@ -1,14 +1,15 @@
-// File: lib/iniciador.dart
+// File: iniciador.dart
 import 'package:flutter/material.dart';
-import 'package:observador/services/storage_service.dart';
-import 'package:observador/services/theme_service.dart';
-import 'package:observador/services/notification_service.dart';
-import 'package:observador/services/device_service.dart';
-import 'package:observador/services/remote_ai_service.dart';
-import 'package:observador/services/history_service.dart';
-import 'package:observador/providers/network_provider.dart';
-import 'package:observador/widgets/device_tile.dart';
-import 'package:observador/screens/main_screen.dart';
+import 'lib/services/initializer.dart';
+import 'lib/services/storage_service.dart';
+import 'lib/services/theme_service.dart';
+import 'lib/services/notification_service.dart';
+import 'lib/services/device_service.dart';
+import 'lib/services/remote_ai_service.dart';
+import 'lib/services/history_service.dart';
+import 'lib/providers/network_provider.dart';
+import 'lib/widgets/device_tile.dart';
+import 'lib/screens/main_screen.dart';
 
 /// Inicializador do Projeto Observador
 class Iniciador {
@@ -52,30 +53,20 @@ class Iniciador {
     historyService.initHistory();
   }
 
-  /// Função para verificar e criar placeholders caso algum arquivo/função falte
-  void checkAndCreatePlaceholders() {
-    // Placeholder para DeviceService
-    deviceService ??= DeviceService(storageService: storageService);
-
-    // Placeholder para RemoteAIService
-    remoteAIService ??= RemoteAIService(storageService: storageService);
-
-    // Placeholder para ThemeService
-    themeService ??= ThemeService();
-
-    // Placeholder para NotificationService
-    notificationService ??= NotificationService();
-  }
-
-  /// Inicializa o app
-  void runAppWithInit() {
-    checkAndCreatePlaceholders();
-
+  /// Inicializa o app e chama o initializer
+  void runAppWithInit() async {
     runApp(MaterialApp(
       title: 'Observador',
       theme: themeService.getTheme('claro'),
       darkTheme: themeService.getTheme('escuro'),
       home: MainScreen(networkProvider: networkProvider),
     ));
+
+    // Chama o Initializer depois que o app está em execução
+    await Initializer().run(storageService, themeService, notificationService, deviceService, remoteAIService, historyService);
   }
+}
+
+void main() {
+  Iniciador().runAppWithInit();
 }
