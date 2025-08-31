@@ -1,5 +1,6 @@
 // File: iniciador.dart
 import 'package:flutter/material.dart';
+import 'services/initializer.dart'; // import do initializer
 import 'services/storage_service.dart';
 import 'services/theme_service.dart';
 import 'services/notification_service.dart';
@@ -9,7 +10,6 @@ import 'services/history_service.dart';
 import 'providers/network_provider.dart';
 import 'widgets/device_tile.dart';
 import 'screens/main_screen.dart';
-import 'services/initializer.dart';
 
 /// Inicializador do Projeto Observador
 class Iniciador {
@@ -26,7 +26,6 @@ class Iniciador {
 
   Iniciador._internal() {
     _initServices();
-    _runInitializer();
   }
 
   void _initServices() {
@@ -41,21 +40,18 @@ class Iniciador {
     notificationService.init();
     themeService.initThemes();
     historyService.initHistory();
-  }
 
-  void _runInitializer() {
-    Initializer().checkAndFix(_allServices());
+    // Chama o initializer aqui
+    Initializer().checkAndCreatePlaceholders(
+      storageService: storageService,
+      themeService: themeService,
+      notificationService: notificationService,
+      deviceService: deviceService,
+      remoteAIService: remoteAIService,
+      historyService: historyService,
+      networkProvider: networkProvider,
+    );
   }
-
-  Map<String, dynamic> _allServices() => {
-        'storageService': storageService,
-        'themeService': themeService,
-        'notificationService': notificationService,
-        'deviceService': deviceService,
-        'remoteAIService': remoteAIService,
-        'historyService': historyService,
-        'networkProvider': networkProvider,
-      };
 
   void runAppWithInit() {
     runApp(MaterialApp(
@@ -65,4 +61,8 @@ class Iniciador {
       home: MainScreen(networkProvider: networkProvider),
     ));
   }
+}
+
+void main() {
+  Iniciador().runAppWithInit();
 }
