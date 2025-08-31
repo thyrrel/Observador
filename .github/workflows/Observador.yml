@@ -14,6 +14,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -22,32 +32,39 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Inicializador & Initializer
+      - name: Run Inicializador
+        id: iniciador
         run: |
           set -e
-          echo "Rodando Iniciador..."
+          echo "==== Rodando Iniciador ===="
           flutter run lib/iniciador.dart --release
-          echo "Rodando Initializer para validar placeholders e serviços..."
+
+      - name: Run Initializer
+        if: ${{ steps.iniciador.outcome == 'success' }}
+        id: initializer
+        run: |
+          set -e
+          echo "==== Rodando Initializer para validar placeholders e serviços ===="
           flutter run lib/services/initializer.dart --release
 
       - name: Analyze code
-        if: ${{ success() }}
+        if: ${{ steps.initializer.outcome == 'success' }}
         run: flutter analyze
 
       - name: Run tests
-        if: ${{ success() }}
+        if: ${{ steps.initializer.outcome == 'success' }}
         run: flutter test --coverage
 
       - name: Build APK (release)
-        if: ${{ success() }}
+        if: ${{ steps.initializer.outcome == 'success' }}
         run: flutter build apk --release
 
       - name: Build AppBundle (release)
-        if: ${{ success() }}
+        if: ${{ steps.initializer.outcome == 'success' }}
         run: flutter build appbundle --release
 
       - name: Upload build artifacts
-        if: ${{ success() }}
+        if: ${{ steps.initializer.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: build-outputs
