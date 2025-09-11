@@ -1,13 +1,13 @@
 name: observador
 description: Monitoramento de redes e segurança com integração IA híbrida
-version: 1.0.0+1
+version: 1.0.0 + 1
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
-    sdk: flutter
+	sdk: flutter
 
   # Serviços de armazenamento
   flutter_secure_storage: ^9.0.0
@@ -27,17 +27,17 @@ dependencies:
   # Background tasks
   workmanager: ^0.5.2
 
-  # IA/ML
+  # IA / ML
   http: ^1.2.1
-  dio: ^5.4.3+1
+  dio: ^5.4.3 + 1
 
   # State management
   provider: ^6.1.1
 
 dev_dependencies:
   flutter_test:
-    sdk: flutter
+	sdk: flutter
   flutter_lints: ^4.0.0
 
 flutter:
-  uses-material-design: true
+  uses - material - design: true
