@@ -7,6 +7,7 @@ import 'services/nova_analyzer_service.dart';
 import 'services/nova_memory_service.dart';
 import 'services/nova_action_service.dart';
 import 'models/nova_snapshot.dart';
+import 'models/nova_insight.dart';
 import '../../../models/device_model.dart';
 import '../../../services/router_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -36,21 +37,21 @@ class NovaCore {
     logger.log('NOVA: Snapshot recebido de ${snapshot.device.name}');
     memory.storeSnapshot(snapshot);
 
-    final insight = analyzer.analyze(snapshot);
-    if (insight.isNotEmpty) {
-      logger.log('NOVA: $insight');
-      memory.rememberInsight(snapshot.device.ip, insight);
+    final NovaInsight? insight = analyzer.analyze(snapshot);
+    if (insight != null) {
+      logger.log('NOVA: ${insight.toString()}');
+      memory.rememberInsight(snapshot.device.ip, insight.mensagem);
 
-      // Ações baseadas em insight
-      if (insight.contains('priorizado')) {
-        action.prioritize(snapshot.device);
+      // Ações baseadas no tipo de insight
+      switch (insight.tipo) {
+        case 'Pico':
+          action.prioritize(snapshot.device);
+          break;
+        case 'Suspeito':
+          action.block(snapshot.device);
+          break;
+        // TODO: expandir com mais tipos e regras
       }
-
-      if (insight.contains('bloqueado')) {
-        action.block(snapshot.device);
-      }
-
-      // TODO: expandir com regras dinâmicas
     }
   }
 }
