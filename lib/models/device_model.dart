@@ -1,74 +1,81 @@
+// /lib/models/device_model.dart
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃ 📦 DeviceModel - Modelo de dispositivo       ┃
-// ┃ 🔧 Representa um nó na rede observada        ┃
+// ┃ 📦 DeviceModel - Representa um dispositivo na rede ┃
+// ┃ 🔍 IP, MAC, tráfego, tipo, sinal, prioridade etc ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 class DeviceModel {
-  final String id;     // Identificador único
-  final String name;   // Nome do dispositivo
-  final String ip;     // Endereço IP
-  final String mac;    // Endereço MAC
+  final String ip;
+  final String mac;
+  final String name;
+  final String manufacturer;
+  final String type;
+
+  final int rxBytes;
+  final int txBytes;
+  final int signalStrength; // dBm (Wi-Fi)
+  final int priorityLevel;  // 0 = normal, 1 = priorizado, 2 = crítico
+
+  final DateTime? lastSeen;
+  bool blocked;
 
   DeviceModel({
-    required this.id,
-    required this.name,
     required this.ip,
     required this.mac,
+    required this.name,
+    required this.manufacturer,
+    required this.type,
+    required this.rxBytes,
+    required this.txBytes,
+    this.signalStrength = 0,
+    this.priorityLevel = 0,
+    this.lastSeen,
+    this.blocked = false,
   });
 
-  // 🧬 Construtor a partir de JSON
-  factory DeviceModel.fromJson(Map<String, dynamic> json) {
+  /// 🧬 Cria a partir de RouterDevice
+  factory DeviceModel.fromRouter(RouterDevice r) {
     return DeviceModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? 'Dispositivo',
-      ip: json['ip'] ?? '',
-      mac: json['mac'] ?? '',
+      ip: r.ip ?? '',
+      mac: r.mac,
+      name: r.name,
+      manufacturer: r.manufacturer ?? '',
+      type: r.type ?? 'Desconhecido',
+      rxBytes: r.rxBytes,
+      txBytes: r.txBytes,
+      signalStrength: r.signalStrength ?? 0,
+      priorityLevel: r.priorityLevel ?? 0,
+      lastSeen: r.lastSeen,
+      blocked: r.blocked,
     );
   }
 
-  // 📤 Converter para JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'ip': ip,
-      'mac': mac,
-    };
+  /// 🧼 Instância vazia
+  factory DeviceModel.empty() => DeviceModel(
+        ip: '',
+        mac: '',
+        name: '',
+        manufacturer: '',
+        type: '',
+        rxBytes: 0,
+        txBytes: 0,
+      );
+
+  /// 📊 Mbps atual estimado
+  double get currentMbps => ((rxBytes + txBytes) * 8) / 1e6;
+
+  /// 🔍 Identificador curto
+  String get shortId => '${name.isNotEmpty ? name : mac.substring(0, 8)}';
+
+  /// 🧠 Sugestão de uso baseado em tipo
+  String get usageHint {
+    if (type.contains('TV')) return 'Streaming';
+    if (type.contains('Console')) return 'Jogos';
+    if (type.contains('PC')) return 'Trabalho';
+    if (type.contains('Celular')) return 'Pessoal';
+    return 'Desconhecido';
   }
 
-  // 🔁 Criar cópia modificada
-  DeviceModel copyWith({
-    String? id,
-    String? name,
-    String? ip,
-    String? mac,
-  }) {
-    return DeviceModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      ip: ip ?? this.ip,
-      mac: mac ?? this.mac,
-    );
-  }
-
-  // 🧪 Comparação de objetos
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is DeviceModel &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          name == other.name &&
-          ip == other.ip &&
-          mac == other.mac;
-
-  @override
-  int get hashCode =>
-      id.hashCode ^ name.hashCode ^ ip.hashCode ^ mac.hashCode;
-
-  // 🧾 Representação textual
-  @override
-  String toString() {
-    return 'DeviceModel(id: $id, name: $name, ip: $ip, mac: $mac)';
-  }
+  /// 🔥 Está ativo?
+  bool get isActive => rxBytes + txBytes > 0;
 }
