@@ -1,7 +1,7 @@
 // /lib/services/router_service.dart
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃ 🔧 RouterService - Interface entre app e adaptadores ┃
-// ┃ 🧠 Gerencia sessão, delega ações e abstrai complexidade ┃
+// ┃ 🧠 Gerencia sessão, delega ações e classifica tipo ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 import '../models/device_model.dart';
@@ -28,8 +28,31 @@ class RouterService {
 
   Future<List<DeviceModel>> getConnectedDevices() async {
     if (_session == null) return [];
+
     final raw = await _adapter.getClients(_session!.token, _session!.token);
-    return raw.map((r) => DeviceModel.fromRouter(r)).toList();
+
+    return raw.map((r) {
+      final inferredType = classifyDeviceType(
+        r.name,
+        r.manufacturer ?? '',
+        r.rxBytes,
+        r.txBytes,
+      );
+
+      return DeviceModel(
+        ip: r.ip ?? '',
+        mac: r.mac,
+        name: r.name,
+        manufacturer: r.manufacturer ?? '',
+        type: inferredType,
+        rxBytes: r.rxBytes,
+        txBytes: r.txBytes,
+        signalStrength: r.signalStrength ?? 0,
+        priorityLevel: r.priorityLevel ?? 0,
+        lastSeen: r.lastSeen,
+        blocked: r.blocked,
+      );
+    }).toList();
   }
 
   Future<bool> blockDevice(String ip, String mac) async {
@@ -53,7 +76,7 @@ class RouterService {
   }
 
   Future<double> getDeviceTraffic(String mac) async {
-    // Placeholder: implementar com base em adaptador específico
+    // Placeholder para futura integração com adaptadores
     return 0.0;
   }
 
