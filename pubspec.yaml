@@ -22,9 +22,15 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Principais
   cupertino_icons: ^1.0.6         # Ícones padrão do iOS
   http: ^1.2.1                    # Requisições HTTP
   provider: ^6.1.2                # Gerenciamento de estado
+
+  # Necessárias para corrigir erros do build
+  shared_preferences: ^2.2.2      # Armazenamento local simples
+  flutter_secure_storage: ^9.0.0  # Armazenamento seguro
+  workmanager: ^0.5.2             # Tarefas em segundo plano
 
 # ╭──────────────────────────────────────────────╮
 # │ 🧪 Dependências de desenvolvimento           │
