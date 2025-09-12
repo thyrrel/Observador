@@ -1,4 +1,9 @@
-// lib/pages/home_page.dart
+// /lib/pages/home_page.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 🏠 HomePage - Tela principal do Observador   ┃
+// ┃ 🔧 Acesso rápido a módulos e serviços        ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/ia_network_service.dart';
@@ -15,7 +20,11 @@ class HomePage extends StatelessWidget {
   final IANetworkService iaService;
   final RouterService routerService;
 
-  const HomePage({super.key, required this.iaService, required this.routerService});
+  const HomePage({
+    super.key,
+    required this.iaService,
+    required this.routerService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,15 +32,15 @@ class HomePage extends StatelessWidget {
     final dnsProvider = context.watch<DNSProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Observador')),
+      appBar: AppBar(title: const Text('🛰️ Observador')),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: GridView.count(
           crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
           children: [
-            _buildCard(
+            _moduleCard(
               icon: Icons.dashboard,
               title: 'Dashboard',
               subtitle: 'Visualizar dados',
@@ -42,42 +51,51 @@ class HomePage extends StatelessWidget {
                 ),
               ),
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.network_check,
               title: 'Network',
               subtitle: 'Controle de rede',
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => NetworkControlPage(routerService: routerService, iaService: iaService),
+                  builder: (_) => NetworkControlPage(
+                    routerService: routerService,
+                    iaService: iaService,
+                  ),
                 ),
               ),
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.smart_toy,
               title: 'AI Assistant',
               subtitle: 'Assistente IA',
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AiAssistantPage()),
+                MaterialPageRoute(
+                  builder: (_) => const AiAssistantPage(),
+                ),
               ),
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.settings,
               title: 'Configurações',
               subtitle: 'Ajustes e DNS',
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
+                MaterialPageRoute(
+                  builder: (_) => const SettingsPage(),
+                ),
               ),
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.admin_panel_settings,
               title: 'Admin',
               subtitle: 'Painel Administrativo',
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdminPage()),
+                MaterialPageRoute(
+                  builder: (_) => const AdminPage(),
+                ),
               ),
             ),
           ],
@@ -86,7 +104,10 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCard({
+  // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  // ┃ 🔹 _moduleCard - Card visual para cada módulo ┃
+  // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  Widget _moduleCard({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -99,11 +120,11 @@ class HomePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 48, color: Colors.blue),
+              Icon(icon, size: 48, color: Colors.blueAccent),
               const SizedBox(height: 12),
               Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
