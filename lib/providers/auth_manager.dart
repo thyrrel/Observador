@@ -1,4 +1,9 @@
-// lib/providers/auth_manager.dart
+// /lib/providers/auth_manager.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 🔐 AuthManager - Gerencia autenticação local ┃
+// ┃ 🧬 Biometria, login manual e logout          ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -8,11 +13,11 @@ class AuthManager extends ChangeNotifier {
   bool _isAuthenticated = false;
   bool get isAuthenticated => _isAuthenticated;
 
-  /// Método público para realizar login biométrico
+  /// 🔐 Autenticação biométrica (ou fallback)
   Future<bool> authenticate() async {
     try {
-      bool canCheckBiometrics = await _auth.canCheckBiometrics;
-      bool isDeviceSupported = await _auth.isDeviceSupported();
+      final canCheckBiometrics = await _auth.canCheckBiometrics;
+      final isDeviceSupported = await _auth.isDeviceSupported();
 
       if (!canCheckBiometrics || !isDeviceSupported) {
         _isAuthenticated = false;
@@ -36,19 +41,19 @@ class AuthManager extends ChangeNotifier {
       _isAuthenticated = false;
       notifyListeners();
       if (kDebugMode) {
-        print('Erro na autenticação: $e');
+        print('⚠️ Erro na autenticação: $e');
       }
       return false;
     }
   }
 
-  /// Logout manual
+  /// 🔓 Logout manual
   void logout() {
     _isAuthenticated = false;
     notifyListeners();
   }
 
-  /// Login manual (por senha ou fallback)
+  /// 🔑 Login manual (por senha ou fallback)
   void loginManually() {
     _isAuthenticated = true;
     notifyListeners();
