@@ -1,8 +1,13 @@
-// lib/providers/app_state.dart
+// /lib/providers/app_state.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 🧠 AppState - Estado global do tema visual    ┃
+// ┃ 🎨 Gerencia tema + persistência via storage ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// 🔑 Enum com os 4 temas disponíveis
+/// 🎨 Enum com os 4 temas disponíveis
 enum AppTheme { Light, Dark, OLED, Matrix }
 
 class AppState extends ChangeNotifier {
@@ -11,7 +16,7 @@ class AppState extends ChangeNotifier {
 
   AppTheme get theme => _theme;
 
-  /// 🔑 Retorna o ThemeData de acordo com o tema selecionado
+  /// 🎨 Retorna o ThemeData correspondente ao tema atual
   ThemeData get themeData {
     switch (_theme) {
       case AppTheme.Dark:
@@ -65,23 +70,19 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// 🔑 Carrega o tema salvo no storage
+  /// 📦 Carrega o tema salvo no armazenamento seguro
   Future<void> loadTheme() async {
     final value = await _storage.read(key: 'theme');
     if (value != null) {
-      try {
-        _theme = AppTheme.values.firstWhere(
-          (e) => e.toString() == value,
-          orElse: () => AppTheme.Light,
-        );
-      } catch (_) {
-        _theme = AppTheme.Light;
-      }
+      _theme = AppTheme.values.firstWhere(
+        (e) => e.toString() == value,
+        orElse: () => AppTheme.Light,
+      );
     }
     notifyListeners();
   }
 
-  /// 🔑 Atualiza o tema e salva no storage
+  /// 💾 Atualiza o tema e salva no armazenamento
   Future<void> setTheme(AppTheme newTheme) async {
     _theme = newTheme;
     await _storage.write(key: 'theme', value: newTheme.toString());
