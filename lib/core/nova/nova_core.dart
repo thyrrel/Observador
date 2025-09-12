@@ -1,23 +1,26 @@
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃ 🧠 NovaCore - Núcleo da IA (Next-Gen Virtual Alg.)   ┃
+// ┃ 🧠 NovaCore - Núcleo da IA (N.O.V.A.)                ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-import '../models/nova_snapshot.dart';
-import '../services/logger_service.dart';
+import 'services/logger_service.dart';
+import 'services/nova_analyzer_service.dart';
+import 'models/nova_snapshot.dart';
 
 class NovaCore {
   final LoggerService logger = LoggerService();
+  final NovaAnalyzerService analyzer = NovaAnalyzerService();
 
   // Recebe snapshot e processa observação
   void observe(NovaSnapshot snapshot) {
-    logger.log('NOVA: Observando ${snapshot.device.name} com ${snapshot.mbps.toStringAsFixed(2)} Mbps');
+    logger.log('NOVA: Snapshot recebido de ${snapshot.device.name}');
 
-    // Regra simples: detectar pico em TVs
-    if (snapshot.mbps > 25 && snapshot.usageType.contains('TV')) {
-      logger.log('NOVA: Pico detectado na TV ${snapshot.device.name}');
-      // TODO: gerar insight ou ação
+    // Interpreta snapshot
+    final insight = analyzer.analyze(snapshot);
+
+    // Registra insight se relevante
+    if (insight.isNotEmpty) {
+      logger.log('NOVA: $insight');
+      // TODO: enviar para memória ou gerar ação
     }
-
-    // TODO: enviar para memória ou análise avançada
   }
 }
