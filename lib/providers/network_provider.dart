@@ -1,35 +1,36 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📡 NetworkProvider - Gerenciador de rede     ┃
+// ┃ 🔧 Provider para dispositivos monitorados    ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/foundation.dart';
-import '../services/network_service.dart';
+import '../models/device_model.dart';
 
-class NetworkProvider extends ChangeNotifier {
-  final NetworkService _networkService = NetworkService();
-  bool _loading = false;
+class NetworkProvider with ChangeNotifier {
+  final List<NetworkDevice> _devices = [];
 
-  List<NetworkDevice> get devices => _networkService.devices;
-  bool get loading => _loading;
+  // 🔍 Lista imutável de dispositivos
+  List<NetworkDevice> get devices => List.unmodifiable(_devices);
 
-  NetworkProvider() {
-    _networkService.addListener(notifyListeners);
-    loadNetworkData();
-  }
-
-  Future<void> loadNetworkData() async {
-    _loading = true;
-    notifyListeners();
-
-    await _networkService.scanNetwork();
-
-    _loading = false;
+  // ➕ Adiciona um novo dispositivo à rede
+  void addDevice(NetworkDevice device) {
+    _devices.add(device);
     notifyListeners();
   }
 
-  void toggleBlock(NetworkDevice device) {
-    _networkService.toggleBlock(device);
+  // ➖ Remove dispositivo pelo ID
+  void removeDevice(String id) {
+    _devices.removeWhere((d) => d.id == id);
+    notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _networkService.dispose();
-    super.dispose();
+  // 🔁 Alterna status de bloqueio
+  void toggleBlockDevice(String id) {
+    final device = _devices.firstWhere(
+      (d) => d.id == id,
+      orElse: () => throw Exception("Device not found"),
+    );
+    device.blocked = !device.blocked;
+    notifyListeners();
   }
 }
