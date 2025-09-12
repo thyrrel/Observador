@@ -1,7 +1,12 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📊 DeviceTraffic - Estatísticas de tráfego   ┃
+// ┃ 🔧 Dados de download e upload por dia        ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 class DeviceTraffic {
-  final String day;
-  final int rxBytes; // Download
-  final int txBytes; // Upload
+  final String day;       // Dia da coleta (ex: '2025-09-11')
+  final int rxBytes;      // Bytes recebidos (download)
+  final int txBytes;      // Bytes enviados (upload)
 
   DeviceTraffic({
     required this.day,
