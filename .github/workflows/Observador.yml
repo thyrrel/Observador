@@ -2,28 +2,28 @@ name: Observador
 
 on:
   push:
-	branches: [main]
+    branches: [main]
   pull_request:
-	branches: [main]
+    branches: [main]
 
 jobs:
   build:
-	runs - on: ubuntu - latest
+    runs-on: ubuntu-latest
 
-	steps:
-  	- name: Checkout código
-    	uses: actions / checkout@v4
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-  	- name: Instalar Flutter
-    	uses: subosito / flutter - action@v2
-    	with:
-      	flutter - version: '3.24.5'
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
 
-  	- name: Instalar dependências
-    	run: flutter pub get
+      - name: Instalar dependências
+        run: flutter pub get
 
-  	- name: Analisar código
-    	run: flutter analyze
+      - name: Analisar código
+        run: flutter analyze
 
-  	- name: Build APK
-    	run: flutter build apk --release
+      - name: Build APK
+        run: flutter build apk --release
