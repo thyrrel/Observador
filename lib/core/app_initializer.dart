@@ -1,42 +1,31 @@
 // /lib/core/app_initializer.dart
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃ 🚀 AppInitializer - Inicialização do app     ┃
-// ┃ 🔧 Carrega dados e injeta dependências       ┃
+// ┃ 🐾 Inclui Watchdog para verificação híbrida ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/network_provider.dart';
+import 'package:flutter/foundation.dart';
 import '../services/storage_service.dart';
-import '../models/device_model.dart';
+import '../services/auth_service.dart';
+import '../services/bluetooth_service.dart';
+import '../../tools/watchdog.dart';
 
-class AppInitializer extends StatelessWidget {
-  final Widget child;
+class AppInitializer {
+  static Future<void> initialize() async {
+    print('🚀 Inicializando Observador...\n');
 
-  const AppInitializer({super.key, required this.child});
+    // 🔐 Autenticação
+    await AuthService().authenticate();
 
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<DeviceModel>>(
-      future: StorageService().loadDevices(),
+    // 💾 Storage
+    await StorageService().init();
 
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    // 📡 Bluetooth
+    await BluetoothService().startScan();
 
-        final devices = snapshot.data ?? [];
+    // 🐾 Watchdog automático
+    await Watchdog.run(auto: true);
 
-        final provider = NetworkProvider();
-        for (final device in devices) {
-          provider.addDevice(device);
-        }
-
-        return ChangeNotifierProvider.value(
-          value: provider,
-          child: child,
-        );
-      },
-    );
+    print('\n✅ App pronto para uso.');
   }
 }
