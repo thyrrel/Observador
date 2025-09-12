@@ -6,6 +6,7 @@ import 'services/logger_service.dart';
 import 'services/nova_analyzer_service.dart';
 import 'services/nova_memory_service.dart';
 import 'services/nova_action_service.dart';
+import 'services/nova_insight_history_service.dart';
 import 'models/nova_snapshot.dart';
 import 'models/nova_insight.dart';
 import '../../../models/device_model.dart';
@@ -18,6 +19,7 @@ class NovaCore {
   final LoggerService logger = LoggerService();
   final NovaAnalyzerService analyzer = NovaAnalyzerService();
   final NovaMemoryService memory = NovaMemoryService();
+  final NovaInsightHistoryService history = NovaInsightHistoryService();
   late final NovaActionService action;
 
   NovaCore({
@@ -32,26 +34,36 @@ class NovaCore {
     );
   }
 
-  // Processa snapshot completo
+  // Entrada principal da IA: recebe snapshot e processa
   void observe(NovaSnapshot snapshot) {
-    logger.log('NOVA: Snapshot recebido de ${snapshot.device.name}');
+    final ip = snapshot.device.ip;
+    final nome = snapshot.device.name;
+
+    logger.log('NOVA: Snapshot recebido de $nome');
     memory.storeSnapshot(snapshot);
 
     final NovaInsight? insight = analyzer.analyze(snapshot);
-    if (insight != null) {
-      logger.log('NOVA: ${insight.toString()}');
-      memory.rememberInsight(snapshot.device.ip, insight.mensagem);
+    if (insight == null) return;
 
-      // Ações baseadas no tipo de insight
-      switch (insight.tipo) {
-        case 'Pico':
-          action.prioritize(snapshot.device);
-          break;
-        case 'Suspeito':
-          action.block(snapshot.device);
-          break;
-        // TODO: expandir com mais tipos e regras
-      }
+    // Evita duplicidade de ação
+    if (history.containsInsight(ip, insight.tipo)) {
+      logger.log('NOVA: Insight já registrado para $nome (${insight.tipo})');
+      return;
+    }
+
+    logger.log('NOVA: ${insight.toString()}');
+    memory.rememberInsight(ip, insight.mensagem);
+    history.add(insight);
+
+    // Ações baseadas no tipo de insight
+    switch (insight.tipo) {
+      case 'Pico':
+        action.prioritize(snapshot.device);
+        break;
+      case 'Suspeito':
+        action.block(snapshot.device);
+        break;
+      // TODO: adicionar novos tipos (Ociosidade, Conflito, etc.)
     }
   }
 }
