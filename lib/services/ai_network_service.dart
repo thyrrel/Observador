@@ -1,21 +1,28 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 👁️ NovaObserver - Observador da rede para N.O.V.A.  ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'dart:async';
 import '../models/device_model.dart';
 import '../services/router_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../nova/nova_core.dart';
+import '../models/nova_snapshot.dart';
 
 typedef VoiceCallback = void Function(String msg);
 
-class IANetworkManager {
+class NovaObserver {
   final RouterService routerService;
   final VoiceCallback voiceCallback;
   final FlutterLocalNotificationsPlugin notificationsPlugin;
+  final NovaCore novaCore = NovaCore();
 
   List<DeviceModel> devices = [];
   Map<String, List<double>> trafficHistory = {};
   Map<String, String> deviceUsageType = {};
   Timer? _monitorTimer;
 
-  IANetworkManager({
+  NovaObserver({
     required this.routerService,
     required this.voiceCallback,
     required this.notificationsPlugin,
@@ -29,9 +36,7 @@ class IANetworkManager {
     });
   }
 
-  void stopMonitoring() {
-    _monitorTimer?.cancel();
-  }
+  void stopMonitoring() => _monitorTimer?.cancel();
 
   Future<void> _updateDevices() async {
     devices = await routerService.getConnectedDevices();
@@ -47,14 +52,25 @@ class IANetworkManager {
     for (var d in devices) {
       double currentMbps = trafficHistory[d.ip]?.last ?? 0;
       String usageType = deviceUsageType[d.ip] ?? d.type;
+
+      final snapshot = NovaSnapshot(
+        device: d,
+        mbps: currentMbps,
+        usageType: usageType,
+        history: trafficHistory[d.ip] ?? [],
+      );
+
+      novaCore.observe(snapshot);
+
       if (d.type.contains('Desconhecido')) _notify('Dispositivo suspeito detectado: ${d.name}');
+
       if (usageType.contains('TV') && currentMbps > 20) {
         DeviceModel? gameDevice = devices.firstWhere(
           (d) => d.type.contains('Console') || d.type.contains('PC'),
           orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: ''),
         );
-        if (gameDevice.ip != '') {
-          voiceCallback('TV ${d.name} está usando $currentMbps Mbps. Priorizando ${gameDevice.name}.');
+        if (gameDevice.ip.isNotEmpty) {
+          voiceCallback('TV ${d.name} está usando ${currentMbps.toStringAsFixed(2)} Mbps. Priorizando ${gameDevice.name}.');
           _prioritizeDevice(gameDevice);
         }
       }
@@ -76,7 +92,7 @@ class IANetworkManager {
       priority: Priority.high,
     );
     var platformDetails = NotificationDetails(android: androidDetails);
-    await notificationsPlugin.show(0, 'C.O.R.T.E.X.', msg, platformDetails);
+    await notificationsPlugin.show(0, 'NOVA', msg, platformDetails);
   }
 
   void setDeviceUsageType(String ip, String type) => deviceUsageType[ip] = type;
