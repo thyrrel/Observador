@@ -1,73 +1,101 @@
-// 📦 lib/models/device_model.dart
-// 🔧 Definição do modelo de dispositivo
+// 📦 lib/widgets/device_tile.dart
+// 🔧 Widget de item de dispositivo com ações visuais
 // ✍️ Forjado byThyrrel
 
-class DeviceModel {
-  final String id;     // Identificador único
-  final String name;   // Nome do dispositivo
-  final String ip;     // Endereço IP
-  final String mac;    // Endereço MAC
+import 'package:flutter/material.dart';
+import '../models/device_model.dart';
+import '../providers/network_provider.dart';
+import 'package:provider/provider.dart';
 
-  DeviceModel({
-    required this.id,
-    required this.name,
-    required this.ip,
-    required this.mac,
-  });
+class DeviceTile extends StatelessWidget {
+  final DeviceModel device;
 
-  // 🧬 Construtor a partir de JSON
-  factory DeviceModel.fromJson(Map<String, dynamic> json) {
-    return DeviceModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? 'Dispositivo',
-      ip: json['ip'] ?? '',
-      mac: json['mac'] ?? '',
+  const DeviceTile({super.key, required this.device});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: ValueKey(device.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (_) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Remover dispositivo'),
+            content: Text('Deseja remover "${device.name}" da lista?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remover')),
+            ],
+          ),
+        );
+      },
+      onDismissed: (_) {
+        Provider.of<NetworkProvider>(context, listen: false).removeDevice(device.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Dispositivo "${device.name}" removido')),
+        );
+      },
+      child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: ListTile(
+          leading: const Icon(Icons.devices, color: Colors.blue),
+
+          title: Text(device.name),
+          subtitle: Text('${device.ip} • ${device.mac}'),
+
+          // 📊 Indicador de tráfego (mockado para exemplo)
+          isThreeLine: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          dense: false,
+
+          trailing: Consumer<NetworkProvider>(
+            builder: (_, provider, __) {
+              final blocked = provider.isBlocked(device.id);
+              return IconButton(
+                icon: Icon(
+                  blocked ? Icons.lock : Icons.lock_open,
+                  color: blocked ? Colors.red : Colors.green,
+                ),
+                tooltip: blocked ? 'Desbloquear dispositivo' : 'Bloquear dispositivo',
+                onPressed: () {
+                  provider.toggleBlockDevice(device.id);
+                },
+              );
+            },
+          ),
+
+          // 👇 Adiciona barra de tráfego abaixo do IP/MAC
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${device.ip} • ${device.mac}'),
+              const SizedBox(height: 4),
+              Consumer<NetworkProvider>(
+                builder: (_, provider, __) {
+                  final traffic = provider.getTraffic(device.id);
+                  final total = traffic.totalRx + traffic.totalTx;
+                  final percent = total > 0 ? traffic.totalRx / total : 0.5;
+
+                  return LinearProgressIndicator(
+                    value: percent,
+                    backgroundColor: Colors.grey.shade300,
+                    color: Colors.blueAccent,
+                    minHeight: 6,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-  }
-
-  // 📤 Converter para JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'ip': ip,
-      'mac': mac,
-    };
-  }
-
-  // 🔁 Criar cópia modificada
-  DeviceModel copyWith({
-    String? id,
-    String? name,
-    String? ip,
-    String? mac,
-  }) {
-    return DeviceModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      ip: ip ?? this.ip,
-      mac: mac ?? this.mac,
-    );
-  }
-
-  // 🧪 Comparação de objetos
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is DeviceModel &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          name == other.name &&
-          ip == other.ip &&
-          mac == other.mac;
-
-  @override
-  int get hashCode =>
-      id.hashCode ^ name.hashCode ^ ip.hashCode ^ mac.hashCode;
-
-  // 🧾 Representação textual
-  @override
-  String toString() {
-    return 'DeviceModel(id: $id, name: $name, ip: $ip, mac: $mac)';
   }
 }
