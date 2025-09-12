@@ -1,3 +1,8 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ ⏳ LoadingIndicator - Indicador de progresso ┃
+// ┃ 🔧 Exibe animação de carregamento central    ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 
 class LoadingIndicator extends StatelessWidget {
