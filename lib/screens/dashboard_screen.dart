@@ -1,9 +1,14 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📡 DashboardScreen - Visualização e navegação por dispositivos ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/app_state.dart';
 import '../services/router_service.dart';
 import '../services/ia_service.dart';
+import '../providers/app_state.dart';
 import '../models/device_model.dart';
+import 'device_dashboard_screen.dart'; // Mini-dashboard por dispositivo
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,25 +27,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     routerService = Provider.of<RouterService>(context, listen: false);
     iaService = Provider.of<IAService>(context, listen: false);
-    _loadDevices();
+    _refreshDevices();
     _startTrafficMonitoring();
   }
 
-  void _loadDevices() async {
-    devices = await routerService.getDevices(); // Carrega dispositivos reais
-    setState(() {});
+  void _refreshDevices() async {
+    final result = await routerService.getDevices();
+    if (!mounted) return;
+    setState(() => devices = result);
     iaService.analyzeDevices(devices);
   }
 
   void _startTrafficMonitoring() {
     routerService.monitorTraffic((usage) {
       iaService.analyzeTraffic(devices, usage);
-      setState(() {}); // Atualiza UI em tempo real
+      if (mounted) setState(() {});
     });
   }
 
-  void _editDeviceName(DeviceModel device) async {
-    TextEditingController controller = TextEditingController(text: device.name);
+  Future<void> _editDeviceName(DeviceModel device) async {
+    final controller = TextEditingController(text: device.name);
+
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -49,15 +56,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              setState(() {
-                device.name = controller.text;
-              });
+              setState(() => device.name = controller.text);
               routerService.updateDevice(device);
               Navigator.pop(context);
             },
             child: const Text('Salvar'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceTile(DeviceModel device, ThemeData theme) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: ListTile(
+        title: Text(device.name, style: theme.textTheme.bodyLarge),
+        subtitle: Text('${device.type} • ${device.ip}', style: theme.textTheme.bodyMedium),
+        trailing: IconButton(
+          icon: const Icon(Icons.edit),
+          color: theme.colorScheme.secondary,
+          onPressed: () => _editDeviceName(device),
+        ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DeviceDashboardScreen(device: device),
+            ),
+          );
+        },
       ),
     );
   }
@@ -70,21 +98,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(title: const Text('Dashboard Observador')),
       backgroundColor: theme.scaffoldBackgroundColor,
       body: devices.isEmpty
-          ? Center(child: Text('Nenhum dispositivo encontrado', style: theme.textTheme.bodyText1))
+          ? Center(
+              child: Text(
+                'Nenhum dispositivo encontrado',
+                style: theme.textTheme.bodyLarge,
+              ),
+            )
           : ListView.builder(
               itemCount: devices.length,
-              itemBuilder: (_, index) {
-                final device = devices[index];
-                return ListTile(
-                  title: Text(device.name, style: theme.textTheme.bodyText1),
-                  subtitle: Text('${device.type} • ${device.ip}', style: theme.textTheme.bodyText2),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit),
-                    color: theme.colorScheme.secondary,
-                    onPressed: () => _editDeviceName(device),
-                  ),
-                );
-              },
+              itemBuilder: (_, index) => _buildDeviceTile(devices[index], theme),
             ),
     );
   }
