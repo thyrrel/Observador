@@ -1,6 +1,14 @@
-class ChatMessage {
-  final String text;
-  final bool isUser;
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 💬 ChatMessage - Modelo de mensagem          ┃
+// ┃ 🔧 Representa uma linha de conversa          ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-  ChatMessage({required this.text, required this.isUser});
+class ChatMessage {
+  final String text;     // Conteúdo da mensagem
+  final bool isUser;     // Indica se foi enviada pelo usuário
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+  });
 }
