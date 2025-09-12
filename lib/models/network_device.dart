@@ -7,8 +7,8 @@ import 'device_model.dart';
 import 'device_traffic.dart';
 
 class NetworkDevice {
-  final RouterDevice device;                 // Dados básicos do dispositivo
-  final List<DeviceTraffic> trafficHistory;  // Histórico de tráfego diário
+  final DeviceModel device;                 // Dados básicos do dispositivo
+  final List<DeviceTraffic> trafficHistory; // Histórico de tráfego diário
 
   NetworkDevice({
     required this.device,
@@ -26,6 +26,20 @@ class NetworkDevice {
     trafficHistory.add(t);
   }
 
+  // 🔍 Busca tráfego por dia específico
+  DeviceTraffic? getTrafficByDay(String day) {
+    return trafficHistory.firstWhere(
+      (t) => t.day == day,
+      orElse: () => DeviceTraffic(day: day, rxBytes: 0, txBytes: 0),
+    );
+  }
+
   // 🚫 Verifica se o dispositivo está bloqueado
-  bool get isBlocked => device.blocked;
+  bool get isBlocked => device.name.toLowerCase().contains('bloqueado');
+
+  // 🧾 Representação textual
+  @override
+  String toString() {
+    return 'NetworkDevice(device: ${device.name}, totalRx: $totalRx, totalTx: $totalTx)';
+  }
 }
