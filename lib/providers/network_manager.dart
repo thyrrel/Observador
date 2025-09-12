@@ -1,7 +1,7 @@
 // /lib/providers/network_manager.dart
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃ 📡 NetworkManager - Monitoramento e controle de rede ┃
-// ┃ 🧠 Tráfego, bloqueio, priorização e alertas IA ┃
+// ┃ 📡 NetworkManager - Orquestra rede e decisões IA ┃
+// ┃ 🔐 Usa RouterService para ações e monitoramento ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 import 'dart:async';
@@ -10,7 +10,6 @@ import '../models/device_model.dart';
 import '../services/router_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// 🔊 Callback para feedback de voz
 typedef VoiceCallback = void Function(String msg);
 
 class NetworkManager extends ChangeNotifier {
@@ -24,16 +23,15 @@ class NetworkManager extends ChangeNotifier {
   bool _loading = false;
   Timer? _monitorTimer;
 
-  List<DeviceModel> get devices => _devices;
-  bool get loading => _loading;
-
   NetworkManager({
     required this.routerService,
     required this.voiceCallback,
     required this.notificationsPlugin,
   });
 
-  /// 🔄 Inicia monitoramento contínuo de tráfego
+  List<DeviceModel> get devices => _devices;
+  bool get loading => _loading;
+
   void startMonitoring({int intervalSeconds = 5}) {
     _monitorTimer?.cancel();
     _monitorTimer = Timer.periodic(
@@ -45,18 +43,15 @@ class NetworkManager extends ChangeNotifier {
     );
   }
 
-  /// 🛑 Interrompe monitoramento
   void stopMonitoring() {
     _monitorTimer?.cancel();
   }
 
-  /// 📦 Atualiza lista de dispositivos e coleta tráfego
   Future<void> _updateDevices() async {
     _loading = true;
     notifyListeners();
 
     _devices = await routerService.getConnectedDevices();
-
     for (var d in _devices) {
       _trafficHistory[d.ip] ??= [];
       final mbps = await routerService.getDeviceTraffic(d.mac);
@@ -70,7 +65,6 @@ class NetworkManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 🧠 Analisa tráfego e toma decisões automáticas
   void _analyzeTraffic() {
     for (var d in _devices) {
       final currentMbps = _trafficHistory[d.ip]?.last ?? 0;
@@ -83,7 +77,7 @@ class NetworkManager extends ChangeNotifier {
       if (usageType.contains('TV') && currentMbps > 20) {
         final gameDevice = _devices.firstWhere(
           (dv) => dv.type.contains('Console') || dv.type.contains('PC'),
-          orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: ''),
+          orElse: () => DeviceModel.empty(),
         );
 
         if (gameDevice.ip.isNotEmpty) {
@@ -94,29 +88,27 @@ class NetworkManager extends ChangeNotifier {
     }
   }
 
-  /// 🚀 Prioriza dispositivo no roteador
   Future<void> prioritizeDevice(DeviceModel device, {int priority = 200}) async {
-    await routerService.prioritizeDevice(device.mac, priority: priority);
+    await routerService.limitDevice(device.ip, device.mac, priority);
     _notify('🚀 ${device.name} priorizado com QoS $priority.');
   }
 
-  /// 🔐 Alterna bloqueio/liberação de dispositivo
   Future<void> toggleBlock(DeviceModel device) async {
-    if (device.blocked) {
-      await routerService.limitDevice(device.ip, device.mac, 1024);
-      _notify('🔓 ${device.name} desbloqueado');
-    } else {
-      await routerService.blockDevice(device.ip, device.mac);
-      _notify('🔒 ${device.name} bloqueado');
+    final success = device.blocked
+        ? await routerService.unblockDevice(device.ip, device.mac)
+        : await routerService.blockDevice(device.ip, device.mac);
+
+    if (success) {
+      device.blocked = !device.blocked;
+      _notify(device.blocked
+          ? '🔒 ${device.name} bloqueado'
+          : '🔓 ${device.name} desbloqueado');
+      notifyListeners();
     }
-    device.blocked = !device.blocked;
-    notifyListeners();
   }
 
-  /// 🔔 Notificação local + voz
   void _notify(String msg) async {
     voiceCallback(msg);
-
     final androidDetails = AndroidNotificationDetails(
       'network_alerts',
       'Network Alerts',
@@ -124,25 +116,20 @@ class NetworkManager extends ChangeNotifier {
       importance: Importance.max,
       priority: Priority.high,
     );
-
     final platformDetails = NotificationDetails(android: androidDetails);
     await notificationsPlugin.show(0, 'C.O.R.T.E.X.', msg, platformDetails);
   }
 
-  /// 🧬 Define tipo de uso do dispositivo (manual ou IA)
   void setDeviceUsageType(String ip, String type) {
     _deviceUsageType[ip] = type;
   }
 
-  /// 📈 Histórico de tráfego por IP
   List<double> getTrafficHistory(String ip) => _trafficHistory[ip] ?? [];
 
-  /// 🧹 Limpa histórico de tráfego
   void clearHistory() {
     _trafficHistory.clear();
   }
 
-  /// 🔁 Atualização manual
   Future<void> refreshDevices() async {
     await _updateDevices();
     _analyzeTraffic();
