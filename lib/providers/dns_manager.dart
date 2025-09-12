@@ -1,12 +1,18 @@
-// lib/providers/dns_manager.dart
+// /lib/providers/dns_manager.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 🌐 DNSManager - Gerencia registros DNS locais ┃
+// ┃ 🧠 Adição, remoção, recarga e notificações     ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/foundation.dart';
 
+/// 🔔 Callback para notificação visual
 typedef DNSNotification = void Function(String msg);
 
 class DNSManager extends ChangeNotifier {
   final DNSNotification? notifyCallback;
 
-  Map<String, dynamic> _dnsRecords = {}; // domínio -> IP ou info
+  Map<String, dynamic> _dnsRecords = {}; // domínio → IP ou info
   Map<String, dynamic> get dnsRecords => _dnsRecords;
 
   bool _loading = false;
@@ -14,42 +20,42 @@ class DNSManager extends ChangeNotifier {
 
   DNSManager({this.notifyCallback});
 
-  /// Carrega registros DNS iniciais
+  /// 📦 Carrega registros DNS iniciais
   void loadRecords(Map<String, dynamic> records) {
     _dnsRecords = records;
     notifyListeners();
   }
 
-  /// Atualiza ou adiciona um registro DNS
+  /// 📝 Atualiza ou adiciona um registro DNS
   void setRecord(String domain, dynamic value) {
     _dnsRecords[domain] = value;
-    notifyCallback?.call('Registro DNS atualizado: $domain -> $value');
+    notifyCallback?.call('📝 Registro DNS atualizado: $domain → $value');
     notifyListeners();
   }
 
-  /// Remove um registro DNS
+  /// ❌ Remove um registro DNS
   void removeRecord(String domain) {
     if (_dnsRecords.containsKey(domain)) {
       _dnsRecords.remove(domain);
-      notifyCallback?.call('Registro DNS removido: $domain');
+      notifyCallback?.call('❌ Registro DNS removido: $domain');
       notifyListeners();
     }
   }
 
-  /// Simula recarga de dados (ex: do roteador ou servidor)
+  /// 🔄 Simula recarga de dados (ex: do roteador ou servidor)
   Future<void> refresh() async {
     _loading = true;
     notifyListeners();
     await Future.delayed(const Duration(seconds: 1));
     _loading = false;
     notifyListeners();
-    notifyCallback?.call('Registros DNS atualizados');
+    notifyCallback?.call('🔄 Registros DNS atualizados');
   }
 
-  /// Limpa todos os registros
+  /// 🧹 Limpa todos os registros DNS
   void clearAll() {
     _dnsRecords.clear();
-    notifyCallback?.call('Todos os registros DNS foram removidos');
+    notifyCallback?.call('🧹 Todos os registros DNS foram removidos');
     notifyListeners();
   }
 }
