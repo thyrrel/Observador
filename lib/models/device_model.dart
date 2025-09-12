@@ -1,18 +1,18 @@
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃ 📡 NetworkDevice - Representação de rede     ┃
-// ┃ 🔧 Modelo para dispositivos monitorados      ┃
+// ┃ 📦 DeviceModel - Modelo de dispositivo       ┃
+// ┃ 🔧 Representa um nó na rede observada        ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-class NetworkDevice {
-  final String id;        // Identificador único
-  String name;            // Nome do dispositivo
-  String ip;              // Endereço IP
-  bool blocked;           // Status de bloqueio
+class DeviceModel {
+  final String id;     // Identificador único
+  final String name;   // Nome do dispositivo
+  final String ip;     // Endereço IP
+  final String mac;    // Endereço MAC
 
-  NetworkDevice({
+  DeviceModel({
     required this.id,
     required this.name,
     required this.ip,
-    this.blocked = false,
+    required this.mac,
   });
 }
