@@ -1,3 +1,9 @@
+// /lib/pages/home_screen.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 🏠 HomeScreen - Tela inicial com rotas nomeadas ┃
+// ┃ 🔧 Acesso rápido aos módulos principais       ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -6,43 +12,48 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Observador Home')),
+      appBar: AppBar(title: const Text('🛰️ Observador Home')),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: GridView.count(
           crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
           children: [
-            _buildCard(
+            _moduleCard(
               icon: Icons.dashboard,
               title: 'Dashboard',
               subtitle: 'Visualizar dados',
-              onTap: () => Navigator.pushNamed(context, '/dashboard'),
+              route: '/dashboard',
+              context: context,
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.network_check,
               title: 'Network',
               subtitle: 'Controle de rede',
-              onTap: () => Navigator.pushNamed(context, '/network'),
+              route: '/network',
+              context: context,
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.smart_toy,
               title: 'AI Assistant',
               subtitle: 'Assistente IA',
-              onTap: () => Navigator.pushNamed(context, '/ai-assistant'),
+              route: '/ai-assistant',
+              context: context,
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.settings,
-              title: 'Settings',
-              subtitle: 'Configurações',
-              onTap: () => Navigator.pushNamed(context, '/settings'),
+              title: 'Configurações',
+              subtitle: 'Ajustes e preferências',
+              route: '/settings',
+              context: context,
             ),
-            _buildCard(
+            _moduleCard(
               icon: Icons.admin_panel_settings,
               title: 'Admin',
-              subtitle: 'Painel Admin',
-              onTap: () => Navigator.pushNamed(context, '/admin'),
+              subtitle: 'Painel Administrativo',
+              route: '/admin',
+              context: context,
             ),
           ],
         ),
@@ -50,35 +61,32 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCard({
+  // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  // ┃ 🔹 _moduleCard - Card visual com navegação   ┃
+  // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  Widget _moduleCard({
     required IconData icon,
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    required String route,
+    required BuildContext context,
   }) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
+        onTap: () => Navigator.pushNamed(context, route),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 48, color: Colors.blue),
+              Icon(icon, size: 48, color: Colors.blueAccent),
               const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
+              Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
         ),
