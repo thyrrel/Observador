@@ -1,51 +1,35 @@
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃ 🔐 StorageService - Persistência de dados    ┃
-// ┃ 🧠 Armazenamento seguro e preferências       ┃
+// ┃ 💾 StorageService - Persistência local       ┃
+// ┃ 🔧 Salva e carrega dispositivos da memória   ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/device_model.dart';
 
 class StorageService {
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  static const _keyDevices = 'stored_devices';
 
-  // ╭──────────────────────────────────────────────╮
-  // │ 🔐 Secure Storage (dados sensíveis)           │
-  // ╰──────────────────────────────────────────────╯
-
-  Future<void> writeSecure(String key, String value) async {
-    await _secureStorage.write(key: key, value: value);
-  }
-
-  Future<String?> readSecure(String key) async {
-    return await _secureStorage.read(key: key);
-  }
-
-  Future<void> deleteSecure(String key) async {
-    await _secureStorage.delete(key: key);
-  }
-
-  // ╭──────────────────────────────────────────────╮
-  // │ 📦 SharedPreferences (dados comuns)           │
-  // ╰──────────────────────────────────────────────╯
-
-  Future<void> saveString(String key, String value) async {
+  // 📤 Salva lista de dispositivos
+  Future<void> saveDevices(List<DeviceModel> devices) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, value);
+    final jsonList = devices.map((d) => d.toJson()).toList();
+    await prefs.setString(_keyDevices, jsonEncode(jsonList));
   }
 
-  Future<String?> getString(String key) async {
+  // 📥 Carrega lista de dispositivos
+  Future<List<DeviceModel>> loadDevices() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(key);
+    final raw = prefs.getString(_keyDevices);
+    if (raw == null) return [];
+
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded.map((json) => DeviceModel.fromJson(json)).toList();
   }
 
-  Future<void> saveBool(String key, bool value) async {
+  // 🧹 Limpa dispositivos salvos
+  Future<void> clearDevices() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
-  }
-
-  Future<bool?> getBool(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(key);
+    await prefs.remove(_keyDevices);
   }
 }
