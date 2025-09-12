@@ -1,7 +1,13 @@
-// lib/providers/auth_provider.dart
+// /lib/providers/auth_provider.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 🔐 AuthProvider - Gerencia autenticação e perfil ┃
+// ┃ 👤 Login, logout, persistência e papel do usuário ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// 🔑 Estado de autenticação
 enum AuthStatus { unauthenticated, authenticating, authenticated }
 
 class AuthProvider extends ChangeNotifier {
@@ -12,17 +18,18 @@ class AuthProvider extends ChangeNotifier {
   String? _username;
   String? _role; // Ex.: 'admin', 'user', etc.
 
-  // Getters
+  // 🔍 Getters públicos
   bool get isAuthenticated => _isAuthenticated;
   AuthStatus get status => _status;
   String? get username => _username;
   String? get role => _role;
+  bool get isAdmin => _role == 'admin';
 
   AuthProvider() {
     _loadAuthState();
   }
 
-  /// Faz login simples (username/password) ou biometria/token
+  /// 🔐 Login com username/password ou token biométrico
   Future<bool> login({
     required String username,
     required String password,
@@ -32,8 +39,8 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.authenticating;
     notifyListeners();
 
-    // Aqui você poderia colocar a validação real contra servidor ou local
-    bool success = username.isNotEmpty && password.isNotEmpty;
+    // Validação simulada (substituir por backend real)
+    final success = username.isNotEmpty && password.isNotEmpty;
 
     if (success) {
       _isAuthenticated = true;
@@ -55,7 +62,7 @@ class AuthProvider extends ChangeNotifier {
     return success;
   }
 
-  /// Logout do usuário
+  /// 🔓 Logout e limpeza de dados persistidos
   Future<void> logout() async {
     _isAuthenticated = false;
     _username = null;
@@ -69,16 +76,18 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Carrega estado de autenticação ao iniciar o app
+  /// 📦 Carrega estado salvo no armazenamento seguro
   Future<void> _loadAuthState() async {
     try {
       final savedUsername = await _storage.read(key: 'auth_username');
       final savedRole = await _storage.read(key: 'auth_role');
       final savedStatus = await _storage.read(key: 'auth_status');
 
-      if (savedUsername != null &&
-          savedRole != null &&
-          savedStatus == AuthStatus.authenticated.toString()) {
+      final isValid = savedUsername != null &&
+                      savedRole != null &&
+                      savedStatus == AuthStatus.authenticated.toString();
+
+      if (isValid) {
         _username = savedUsername;
         _role = savedRole;
         _isAuthenticated = true;
@@ -91,9 +100,7 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = false;
       _status = AuthStatus.unauthenticated;
     }
+
     notifyListeners();
   }
-
-  /// Checa se o usuário tem permissão de admin
-  bool get isAdmin => _role == 'admin';
 }
