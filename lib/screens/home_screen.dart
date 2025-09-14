@@ -1,9 +1,15 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📦 home_screen.dart - Tela principal do app "Observador"       ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/theme_service.dart';
 import '../services/placeholder_service.dart';
 import '../services/history_service.dart';
 import '../services/ia_service.dart';
+
 import '../widgets/device_list_widget.dart';
 import '../widgets/notification_widget.dart';
 
@@ -12,10 +18,10 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeService = Provider.of<ThemeService>(context);
-    final placeholderService = Provider.of<PlaceholderService>(context);
-    final historyService = Provider.of<HistoryService>(context);
-    final iaService = Provider.of<IAService>(context);
+    final ThemeService themeService = Provider.of<ThemeService>(context);
+    final PlaceholderService placeholderService = Provider.of<PlaceholderService>(context);
+    final HistoryService historyService = Provider.of<HistoryService>(context);
+    final IAService iaService = Provider.of<IAService>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -43,7 +49,7 @@ class HomeScreen extends StatelessWidget {
           Expanded(
             child: DeviceListWidget(
               placeholders: placeholderService.placeholders,
-              onDeviceAction: (device, action) {
+              onDeviceAction: (Device device, String action) {
                 iaService.analyzeDevice(device);
                 historyService.logEvent('Action $action on ${device.name}');
               },
@@ -61,3 +67,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+// Sugestões
+// - 🧩 Extrair os botões do AppBar em widgets separados para reutilização
+// - 🔤 Tipar explicitamente os parâmetros de `onDeviceAction` (feito)
+// - 🧼 Usar `Consumer` ao invés de `Provider.of` para melhor performance e rebuild controlado
+// - 📦 Adicionar tratamento para falhas em `refreshPlaceholders()`
+// - 🛡️ Verificar se `device.name` pode ser nulo e aplicar fallback defensivo
+
+// ✍️ byThyrrel
+// 💡 Código formatado com estilo técnico, seguro e elegante
+// 🧪 Ideal para agentes de IA com foco em refatoração limpa e confiável
