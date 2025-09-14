@@ -1,3 +1,7 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📦 history_service.dart - Serviço para registro e persistência de eventos ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'storage_service.dart';
 
 class HistoryService {
@@ -7,12 +11,12 @@ class HistoryService {
   HistoryService({required this.storageService});
 
   Future<List<String>> getHistory() async {
-    final data = await storageService.read(_historyKey);
-    return data?.split(',') ?? [];
+    final String? data = await storageService.read(_historyKey);
+    return data?.split(',') ?? <String>[];
   }
 
   Future<void> addEntry(String entry) async {
-    final history = await getHistory();
+    final List<String> history = await getHistory();
     history.add(entry);
     await storageService.save(_historyKey, history.join(','));
   }
@@ -21,3 +25,14 @@ class HistoryService {
     await storageService.delete(_historyKey);
   }
 }
+
+// Sugestões
+// - 🛡️ Adicionar limite de tamanho ao histórico (ex: últimos 100 eventos)
+// - 🔤 Permitir ordenação ou filtragem por data se os registros incluírem timestamp
+// - 📦 Migrar para armazenamento estruturado (ex: JSON ou SQLite) para maior flexibilidade
+// - 🧩 Criar método `containsEntry(String entry)` para facilitar verificações
+// - 🎨 Expor stream ou callback para refletir atualizações em tempo real na UI
+
+// ✍️ byThyrrel
+// 💡 Código formatado com estilo técnico, seguro e elegante
+// 🧪 Ideal para agentes de IA com foco em refatoração limpa e confiável
