@@ -1,5 +1,10 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📦 device_list_screen.dart - Tela que exibe dispositivos da rede ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/app_state.dart';
 import '../services/network_service.dart';
 import '../widgets/device_tile.dart';
@@ -9,8 +14,11 @@ class DeviceListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Provider.of<AppState>(context).themeData;
-    final networkService = Provider.of<NetworkService>(context);
+    final AppState appState = Provider.of<AppState>(context);
+    final ThemeData theme = appState.themeData;
+
+    final NetworkService networkService = Provider.of<NetworkService>(context);
+    final List<Device> devices = networkService.devices;
 
     return Scaffold(
       appBar: AppBar(
@@ -18,7 +26,7 @@ class DeviceListScreen extends StatelessWidget {
         backgroundColor: theme.primaryColor,
       ),
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: networkService.devices.isEmpty
+      body: devices.isEmpty
           ? Center(
               child: Text(
                 'Nenhum dispositivo encontrado',
@@ -26,9 +34,10 @@ class DeviceListScreen extends StatelessWidget {
               ),
             )
           : ListView.builder(
-              itemCount: networkService.devices.length,
-              itemBuilder: (context, index) {
-                final device = networkService.devices[index];
+              itemCount: devices.length,
+              itemBuilder: (BuildContext context, int index) {
+                final Device device = devices[index];
+
                 return DeviceTile(
                   device: device,
                   theme: theme,
@@ -38,3 +47,13 @@ class DeviceListScreen extends StatelessWidget {
     );
   }
 }
+
+// Sugestões
+// - 🔤 Renomear `theme` para `themeData` para maior clareza
+// - 🧩 Extrair o widget `ListView.builder` para uma função separada
+// - 🛡️ Adicionar fallback visual para erro de rede ou carregamento
+// - 📦 Verificar se `Device` possui tipagem explícita no modelo
+// - 🧼 Usar `Consumer` ao invés de `Provider.of` para melhor performance
+
+// ✍️ byThyrrel
+// 💡 Código formatado com estilo técnico, seguro e elegante
