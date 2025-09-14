@@ -1,5 +1,9 @@
-// lib/services/cortex_service.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📦 cortex_service.dart - Monitoramento inteligente de tráfego e priorização ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'dart:async';
+
 import 'device_model.dart';
 import 'router_service.dart';
 import 'notification_service.dart';
@@ -25,38 +29,60 @@ class CortexService {
 
   void startMonitoring({int intervalSeconds = 5}) {
     _monitorTimer?.cancel();
-    _monitorTimer = Timer.periodic(Duration(seconds: intervalSeconds), (_) async {
-      await _updateDevices();
-      _analyzeTraffic();
-    });
+
+    _monitorTimer = Timer.periodic(
+      Duration(seconds: intervalSeconds),
+      (_) async {
+        await _updateDevices();
+        _analyzeTraffic();
+      },
+    );
   }
 
-  void stopMonitoring() => _monitorTimer?.cancel();
+  void stopMonitoring() {
+    _monitorTimer?.cancel();
+  }
 
   Future<void> _updateDevices() async {
     devices = await routerService.getConnectedDevices();
-    for (var d in devices) {
-      trafficHistory[d.ip] ??= [];
-      double mbps = await routerService.getDeviceTraffic(d.mac);
-      trafficHistory[d.ip]?.add(mbps);
-      if (trafficHistory[d.ip]!.length > 10) trafficHistory[d.ip]!.removeAt(0);
+
+    for (final DeviceModel device in devices) {
+      trafficHistory[device.ip] ??= [];
+
+      final double mbps = await routerService.getDeviceTraffic(device.mac);
+      trafficHistory[device.ip]?.add(mbps);
+
+      if (trafficHistory[device.ip]!.length > 10) {
+        trafficHistory[device.ip]!.removeAt(0);
+      }
     }
   }
 
   void _analyzeTraffic() {
-    for (var d in devices) {
-      double currentMbps = trafficHistory[d.ip]?.last ?? 0;
-      String usageType = deviceUsageType[d.ip] ?? d.type;
+    for (final DeviceModel device in devices) {
+      final double currentMbps = trafficHistory[device.ip]?.last ?? 0;
+      final String usageType = deviceUsageType[device.ip] ?? device.type;
 
-      if (d.type.contains('Desconhecido')) _notify('Dispositivo suspeito detectado: ${d.name}');
+      if (device.type.contains('Desconhecido')) {
+        _notify('Dispositivo suspeito detectado: ${device.name}');
+      }
 
       if (usageType.contains('TV') && currentMbps > 20) {
-        DeviceModel? gameDevice = devices.firstWhere(
-            (d) => d.type.contains('Console') || d.type.contains('PC'),
-            orElse: () => DeviceModel(ip: '', mac: '', manufacturer: '', type: '', name: ''));
+        final DeviceModel gameDevice = devices.firstWhere(
+          (d) => d.type.contains('Console') || d.type.contains('PC'),
+          orElse: () => DeviceModel(
+            ip: '',
+            mac: '',
+            manufacturer: '',
+            type: '',
+            name: '',
+          ),
+        );
 
-        if (gameDevice.ip != '') {
-          voiceCallback('TV ${d.name} está usando $currentMbps Mbps. Priorizando ${gameDevice.name}.');
+        if (gameDevice.ip.isNotEmpty) {
+          voiceCallback(
+            'TV ${device.name} está usando $currentMbps Mbps. Priorizando ${gameDevice.name}.',
+          );
           _prioritizeDevice(gameDevice);
         }
       }
@@ -73,9 +99,26 @@ class CortexService {
     notificationService.showNotification('C.O.R.T.E.X.', msg);
   }
 
-  void setDeviceUsageType(String ip, String type) => deviceUsageType[ip] = type;
+  void setDeviceUsageType(String ip, String type) {
+    deviceUsageType[ip] = type;
+  }
 
-  List<double> getTrafficHistory(String ip) => trafficHistory[ip] ?? [];
+  List<double> getTrafficHistory(String ip) {
+    return trafficHistory[ip] ?? [];
+  }
 
-  void clearHistory() => trafficHistory.clear();
+  void clearHistory() {
+    trafficHistory.clear();
+  }
 }
+
+// Sugestões
+// - 🧩 Extrair `_analyzeTraffic()` em múltiplas funções para reduzir complexidade
+// - 🛡️ Adicionar `try/catch` em `_updateDevices()` para capturar falhas de rede
+// - 🔤 Criar enum para tipos de uso (`TV`, `Console`, `PC`, `Desconhecido`) para evitar erros de string
+// - 📦 Adicionar stream ou callback para atualizações em tempo real
+// - 🎨 Integrar com visualização gráfica do histórico de tráfego
+
+// ✍️ byThyrrel
+// 💡 Código formatado com estilo técnico, seguro e elegante
+// 🧪 Ideal para agentes de IA com foco em refatoração limpa e confiável
