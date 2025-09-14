@@ -1,6 +1,10 @@
-// [Flutter] lib/screens/routers_screen.dart
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 📦 routers_screen.dart - Tela que exibe os roteadores da rede         ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/network_provider.dart';
 import '../services/router_service.dart';
 
@@ -9,23 +13,29 @@ class RoutersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final networkProvider = Provider.of<NetworkProvider>(context);
-    final routerService = Provider.of<RouterService>(context);
+    final NetworkProvider networkProvider = Provider.of<NetworkProvider>(context);
+    final RouterService routerService = Provider.of<RouterService>(context);
+
+    final bool isLoading = networkProvider.loading;
+    final List<Router> routers = networkProvider.routers;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Roteadores da Rede'),
         centerTitle: true,
       ),
-      body: networkProvider.loading
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: () => networkProvider.loadNetworkData(),
+              onRefresh: () async {
+                await networkProvider.loadNetworkData();
+              },
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: networkProvider.routers.length,
-                itemBuilder: (context, index) {
-                  final router = networkProvider.routers[index];
+                itemCount: routers.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final Router router = routers[index];
+
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     child: ListTile(
@@ -47,48 +57,12 @@ class RoutersScreen extends StatelessWidget {
   }
 }
 
-// [Flutter] lib/screens/settings_screen.dart
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/app_state.dart';
+// Sugestões
+// - 🧩 Extrair o widget `ListTile` para uma função privada (`_buildRouterTile`)
+// - 🛡️ Adicionar tratamento de erro em `loadNetworkData()`
+// - 🔤 Validar se `router.name`, `router.ip` ou `router.model` podem ser nulos
+// - 📦 Usar `Consumer` para otimizar rebuilds
+// - 🎨 Adicionar ícones dinâmicos conforme status do roteador
 
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            ListTile(
-              title: const Text('Tema do Aplicativo'),
-              subtitle: Text(appState.theme.name),
-              trailing: DropdownButton<AppTheme>(
-                value: appState.theme,
-                onChanged: (AppTheme? theme) {
-                  if (theme != null) appState.setTheme(theme);
-                },
-                items: AppTheme.values.map((theme) {
-                  return DropdownMenuItem(
-                    value: theme,
-                    child: Text(theme.name),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => appState.nextTheme(),
-              child: const Text('Alternar para próximo tema'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// ✍️ byThyrrel
+// 💡 Código formatado com estilo técnico, seguro e elegante
