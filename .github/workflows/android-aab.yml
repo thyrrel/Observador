@@ -1,0 +1,186 @@
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 📦 Workflow - Android AAB                   ┃
+# ┃ 🏪 Build AAB para Google Play Store         ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+name: "📦 Android AAB Build"
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão do app (ex: 1.2.3)'
+        required: false
+        default: '1.0.0'
+        type: string
+      upload_to_play:
+        description: 'Upload para Play Console?'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  android-aab:
+    name: "📦 Build AAB Release"
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ╭──────────────────────────────────────────────╮
+      # │ 📥 Checkout do repositório                   │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📥 Checkout código"
+        uses: actions/checkout@v4
+
+      # ╭──────────────────────────────────────────────╮
+      # │ ☕ Configurar Java                           │
+      # ╰──────────────────────────────────────────────╯
+      - name: "☕ Configurar Java"
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🛠️ Configurar Flutter                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🛠️ Instalar Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          cache: true
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 📦 Instalar dependências                     │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📦 Instalar dependências"
+        run: flutter pub get
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🔍 Análise completa                          │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🔍 Análise completa"
+        run: |
+          flutter analyze --fatal-warnings
+          flutter pub deps
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🔑 Configurar signing (se disponível)        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🔑 Configurar signing"
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "🔑 Configurando keystore para assinatura..."
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
+          
+          # Criar key.properties
+          cat > android/key.properties << EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=keystore.jks
+          EOF
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🏗️ Build AAB Release                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🏗️ Build AAB Release"
+        run: |
+          VERSION="${{ github.event.inputs.version || '1.0.0' }}"
+          BUILD_NUMBER=$((1000 + $GITHUB_RUN_NUMBER))
+          
+          echo "🏗️ Gerando AAB v$VERSION build $BUILD_NUMBER..."
+          
+          flutter build appbundle --release \
+            --dart-define=FLAVOR=production \
+            --dart-define=APP_NAME="Observador" \
+            --build-name="$VERSION" \
+            --build-number="$BUILD_NUMBER"
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 📁 Organizar arquivos                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📁 Organizar AAB"
+        run: |
+          cd build/app/outputs/bundle/release/
+          VERSION="${{ github.event.inputs.version || '1.0.0' }}"
+          BUILD_NUMBER=$((1000 + $GITHUB_RUN_NUMBER))
+          
+          # Renomear AAB
+          mv app-release.aab "observador-v$VERSION-$BUILD_NUMBER.aab"
+          
+          # Criar informações do build
+          cat > build-info-aab.txt << EOF
+          📦 Observador AAB - Informações do Build
+          ========================================
+          
+          🔢 Versão: $VERSION
+          🏗️ Build: $BUILD_NUMBER  
+          📅 Data: $(date '+%Y-%m-%d %H:%M:%S UTC')
+          🌿 Branch: ${{ github.ref_name }}
+          📝 Commit: ${{ github.sha }}
+          
+          📦 AAB: observador-v$VERSION-$BUILD_NUMBER.aab
+          💾 Tamanho: $(du -h observador-v$VERSION-$BUILD_NUMBER.aab | cut -f1)
+          🔑 Assinado: ${{ env.KEYSTORE_BASE64 != '' && 'Sim' || 'Não (Debug)' }}
+          
+          🏪 Google Play Store:
+          1. Faça upload no Play Console
+          2. Configure os detalhes da versão
+          3. Publique para testers ou produção
+          
+          📱 Ou instale manualmente:
+          1. Use bundletool para extrair APKs
+          2. Instale via ADB
+          EOF
+          
+          ls -la
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 📤 Upload AAB Release                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📤 Upload AAB Release"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "observador-release-aab"
+          path: |
+            build/app/outputs/bundle/release/observador-v*.aab
+            build/app/outputs/bundle/release/build-info-aab.txt
+          retention-days: 90
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🏪 Upload para Play Store (opcional)         │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🏪 Upload para Play Store"
+        if: ${{ github.event.inputs.upload_to_play == 'true' && env.PLAY_STORE_JSON != '' }}
+        env:
+          PLAY_STORE_JSON: ${{ secrets.PLAY_STORE_JSON }}
+        run: |
+          echo "🏪 Configurando upload para Play Store..."
+          echo "$PLAY_STORE_JSON" > play-store-key.json
+          
+          # Aqui você adicionaria o código para upload
+          # usando fastlane ou similar
+          echo "⚠️ Upload automático ainda não configurado"
+          echo "💡 Configure PLAY_STORE_JSON secret para habilitar"
+
+      # ╭──────────────────────────────────────────────╮
+      # │ ✅ Resumo do build                           │
+      # ╰──────────────────────────────────────────────╯
+      - name: "✅ Resumo do build"
+        run: |
+          echo "🎉 AAB Release gerado com sucesso!"
+          echo ""
+          echo "📦 Arquivo: observador-v${{ github.event.inputs.version || '1.0.0' }}-$((1000 + $GITHUB_RUN_NUMBER)).aab"
+          echo "💾 Tamanho: $(du -h build/app/outputs/bundle/release/observador-v*.aab | cut -f1)"
+          echo "🔑 Assinado: ${{ env.KEYSTORE_BASE64 != '' && 'Sim ✅' || 'Debug ⚠️' }}"
+          echo ""
+          echo "🔗 Para baixar:"
+          echo "   1. Vá para Actions > Esta execução"
+          echo "   2. Baixe 'observador-release-aab'"
+          echo "   3. Faça upload no Google Play Console"
