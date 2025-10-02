@@ -1,0 +1,77 @@
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 🍎 Workflow - iOS Build                     ┃
+# ┃ 📱 Build para iOS (skip por enquanto)       ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+name: "🍎 iOS Build"
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      skip_build:
+        description: 'Pular build do iOS?'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  ios-build:
+    name: "🍎 Build iOS"
+    runs-on: macos-latest
+    if: ${{ github.event.inputs.skip_build != 'true' }}
+    
+    steps:
+      # ╭──────────────────────────────────────────────╮
+      # │ 📥 Checkout do repositório                   │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📥 Checkout código"
+        uses: actions/checkout@v4
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🛠️ Configurar Flutter                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🛠️ Instalar Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          cache: true
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 📦 Instalar dependências                     │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📦 Instalar dependências"
+        run: flutter pub get
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🏗️ Build iOS                                │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🏗️ Build iOS"
+        run: |
+          flutter build ios --release --no-codesign
+          
+      # ╭──────────────────────────────────────────────╮
+      # │ 📤 Upload IPA                               │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📤 Upload IPA"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "observador-ios-build"
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 30
+
+  ios-skip:
+    name: "🍎 iOS Build (Skipped)"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_build == 'true' || github.event.inputs.skip_build == null }}
+    
+    steps:
+      - name: "⏭️ Skip iOS Build"
+        run: |
+          echo "🍎 Build do iOS foi pulado"
+          echo "💡 Para habilitar, configure:"
+          echo "   - Certificados de desenvolvimento iOS"
+          echo "   - Provisioning profiles"
+          echo "   - Secrets do App Store Connect"
+          echo ""
+          echo "✅ Configure e mude 'skip_build' para false"
