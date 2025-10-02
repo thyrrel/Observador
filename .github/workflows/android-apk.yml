@@ -1,0 +1,135 @@
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 📱 Workflow - Android APK                   ┃
+# ┃ 🏗️ Build APK de produção para instalação   ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+name: "📱 Android APK Build"
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão do app (ex: 1.2.3)'
+        required: false
+        default: '1.0.0'
+        type: string
+
+jobs:
+  android-apk:
+    name: "📱 Build APK Release"
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ╭──────────────────────────────────────────────╮
+      # │ 📥 Checkout do repositório                   │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📥 Checkout código"
+        uses: actions/checkout@v4
+
+      # ╭──────────────────────────────────────────────╮
+      # │ ☕ Configurar Java                           │
+      # ╰──────────────────────────────────────────────╯
+      - name: "☕ Configurar Java"
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🛠️ Configurar Flutter                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🛠️ Instalar Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          cache: true
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 📦 Instalar dependências                     │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📦 Instalar dependências"
+        run: flutter pub get
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🔍 Análise final                             │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🔍 Análise final"
+        run: flutter analyze --fatal-warnings
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 🏗️ Build APK Release                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "🏗️ Build APK Release"
+        run: |
+          VERSION="${{ github.event.inputs.version || '1.0.0' }}"
+          BUILD_NUMBER=$((1000 + $GITHUB_RUN_NUMBER))
+          
+          flutter build apk --release \
+            --dart-define=FLAVOR=production \
+            --dart-define=APP_NAME="Observador" \
+            --build-name="$VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --target-platform android-arm,android-arm64,android-x64
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 📁 Organizar arquivos                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📁 Organizar APK"
+        run: |
+          cd build/app/outputs/flutter-apk/
+          VERSION="${{ github.event.inputs.version || '1.0.0' }}"
+          BUILD_NUMBER=$((1000 + $GITHUB_RUN_NUMBER))
+          
+          # Renomear APK principal
+          mv app-release.apk "observador-v$VERSION-$BUILD_NUMBER.apk"
+          
+          # Criar informações do build
+          cat > build-info.txt << EOF
+          📱 Observador - Informações do Build
+          =====================================
+          
+          🔢 Versão: $VERSION
+          🏗️ Build: $BUILD_NUMBER
+          📅 Data: $(date '+%Y-%m-%d %H:%M:%S UTC')
+          🌿 Branch: ${{ github.ref_name }}
+          📝 Commit: ${{ github.sha }}
+          
+          📱 APK: observador-v$VERSION-$BUILD_NUMBER.apk
+          💾 Tamanho: $(du -h observador-v$VERSION-$BUILD_NUMBER.apk | cut -f1)
+          
+          🚀 Para instalar:
+          1. Baixe o APK da aba Actions > Artifacts
+          2. Ative "Fontes desconhecidas" no Android
+          3. Instale normalmente
+          EOF
+          
+          ls -la
+
+      # ╭──────────────────────────────────────────────╮
+      # │ 📤 Upload APK Release                        │
+      # ╰──────────────────────────────────────────────╯
+      - name: "📤 Upload APK Release"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "observador-release-apk"
+          path: |
+            build/app/outputs/flutter-apk/observador-v*.apk
+            build/app/outputs/flutter-apk/build-info.txt
+          retention-days: 90
+
+      # ╭──────────────────────────────────────────────╮
+      # │ ✅ Resumo do build                           │
+      # ╰──────────────────────────────────────────────╯
+      - name: "✅ Resumo do build"
+        run: |
+          echo "🎉 APK Release gerado com sucesso!"
+          echo ""
+          echo "📱 Arquivo: observador-v${{ github.event.inputs.version || '1.0.0' }}-$((1000 + $GITHUB_RUN_NUMBER)).apk"
+          echo "💾 Tamanho: $(du -h build/app/outputs/flutter-apk/observador-v*.apk | cut -f1)"
+          echo "📦 Plataformas: ARM, ARM64, x64"
+          echo ""
+          echo "🔗 Para baixar:"
+          echo "   1. Vá para Actions > Esta execução"
+          echo "   2. Baixe 'observador-release-apk'"
+          echo "   3. Extraia e instale no Android"
