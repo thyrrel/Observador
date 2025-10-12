@@ -1,6 +1,6 @@
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃ 🚀 Workflow Principal - Observador          ┃
-# ┃ 📱 Orquestração completa de builds          ┃
+# ┃ 📱 APK e AAB sempre funcionais              ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 name: "🚀 Observador - Build Completo"
@@ -8,12 +8,8 @@ name: "🚀 Observador - Build Completo"
 on:
   push:
     branches: [main]
-    paths: ['lib/**', 'pubspec.yaml', 'android/**', 'ios/**']
   pull_request:
     branches: [main]
-  schedule:
-    # Executa diariamente às 6h UTC - ajuste conforme renovação dos créditos
-    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       version:
@@ -21,31 +17,6 @@ on:
         required: false
         default: '1.0.0'
         type: string
-      build_android_test:
-        description: '🧪 Build Android Test'
-        required: false
-        default: true
-        type: boolean
-      build_android_apk:
-        description: '📱 Build Android APK'
-        required: false
-        default: true
-        type: boolean
-      build_android_aab:
-        description: '📦 Build Android AAB'
-        required: false
-        default: true
-        type: boolean
-      build_ios:
-        description: '🍎 Build iOS'
-        required: false
-        default: false
-        type: boolean
-      build_desktop:
-        description: '🖥️ Build Desktop'
-        required: false
-        default: false
-        type: boolean
 
 env:
   FLUTTER_VERSION: '3.24.5'
@@ -62,13 +33,10 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       build-number: ${{ steps.version.outputs.build-number }}
-      should-build: ${{ steps.changes.outputs.should-build }}
       
     steps:
       - name: "📥 Checkout código"
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: "🛠️ Instalar Flutter"
         uses: subosito/flutter-action@v2
@@ -95,29 +63,12 @@ jobs:
           echo "📱 Versão: $VERSION"
           echo "🔢 Build: $BUILD_NUMBER"
 
-      - name: "🔄 Verificar mudanças"
-        id: changes
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "should-build=true" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "should-build=true" >> $GITHUB_OUTPUT
-          else
-            # Verificar se houve mudanças relevantes
-            if git diff --name-only HEAD~1 | grep -E "(lib/|pubspec\.yaml|android/|ios/)" > /dev/null; then
-              echo "should-build=true" >> $GITHUB_OUTPUT
-            else
-              echo "should-build=false" >> $GITHUB_OUTPUT
-            fi
-          fi
-
   # ╭──────────────────────────────────────────────╮
   # │ 🧪 Android Test Build                       │
   # ╰──────────────────────────────────────────────╯
   android-test:
     name: "🧪 Android Test"
     needs: setup
-    if: ${{ needs.setup.outputs.should-build == 'true' && (github.event.inputs.build_android_test != 'false') }}
     runs-on: ubuntu-latest
     
     steps:
@@ -151,6 +102,7 @@ jobs:
         run: |
           cd build/app/outputs/flutter-apk/
           mv app-debug.apk "observador-test-v${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.build-number }}.apk"
+          ls -la
 
       - name: "📤 Upload APK Test"
         uses: actions/upload-artifact@v4
@@ -160,12 +112,11 @@ jobs:
           retention-days: 30
 
   # ╭──────────────────────────────────────────────╮
-  # │ 📱 Android APK Release                       │
+  # │ 📱 Android APK Release - SEMPRE EXECUTA      │
   # ╰──────────────────────────────────────────────╯
   android-apk:
-    name: "📱 Android APK"
+    name: "📱 Android APK Release"
     needs: setup
-    if: ${{ needs.setup.outputs.should-build == 'true' && (github.event.inputs.build_android_apk != 'false') }}
     runs-on: ubuntu-latest
     
     steps:
@@ -189,6 +140,7 @@ jobs:
 
       - name: "🏗️ Build APK Release"
         run: |
+          echo "🏗️ Iniciando build APK Release..."
           flutter build apk --release \
             --dart-define=FLAVOR=production \
             --dart-define=APP_NAME="Observador" \
@@ -215,9 +167,12 @@ jobs:
           
           🚀 Instalação:
           1. Baixe o APK
-          2. Ative "Fontes desconhecidas"
+          2. Ative "Fontes desconhecidas" no Android
           3. Instale normalmente
           EOF
+          
+          echo "✅ APK organizado:"
+          ls -la
 
       - name: "📤 Upload APK Release"
         uses: actions/upload-artifact@v4
@@ -229,12 +184,11 @@ jobs:
           retention-days: 90
 
   # ╭──────────────────────────────────────────────╮
-  # │ 📦 Android AAB Release                       │
+  # │ 📦 Android AAB Release - SEMPRE EXECUTA      │
   # ╰──────────────────────────────────────────────╯
   android-aab:
-    name: "📦 Android AAB"
+    name: "📦 Android AAB Release"
     needs: setup
-    if: ${{ needs.setup.outputs.should-build == 'true' && (github.event.inputs.build_android_aab != 'false') }}
     runs-on: ubuntu-latest
     
     steps:
@@ -258,6 +212,7 @@ jobs:
 
       - name: "🏗️ Build AAB Release"
         run: |
+          echo "🏗️ Iniciando build AAB Release..."
           flutter build appbundle --release \
             --dart-define=FLAVOR=production \
             --dart-define=APP_NAME="Observador" \
@@ -268,45 +223,40 @@ jobs:
         run: |
           cd build/app/outputs/bundle/release/
           mv app-release.aab "observador-v${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.build-number }}.aab"
+          
+          # Criar informações do build AAB
+          cat > build-info-aab.txt << EOF
+          📦 Observador AAB - v${{ needs.setup.outputs.version }}
+          ═══════════════════════════════════════════════
+          
+          🔢 Versão: ${{ needs.setup.outputs.version }}
+          🏗️ Build: ${{ needs.setup.outputs.build-number }}
+          📅 Data: $(date '+%Y-%m-%d %H:%M:%S UTC')
+          🌿 Branch: ${{ github.ref_name }}
+          📝 Commit: ${{ github.sha }}
+          💾 Tamanho: $(du -h observador-v${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.build-number }}.aab | cut -f1)
+          
+          🏪 Google Play Store:
+          1. Faça upload no Play Console
+          2. Configure detalhes da versão
+          3. Publique para testers ou produção
+          
+          📱 Instalação manual:
+          1. Use bundletool para extrair APKs do AAB
+          2. Instale via ADB
+          EOF
+          
+          echo "✅ AAB organizado:"
+          ls -la
 
       - name: "📤 Upload AAB Release"
         uses: actions/upload-artifact@v4
         with:
           name: "📦-observador-release-aab"
-          path: build/app/outputs/bundle/release/observador-v*.aab
+          path: |
+            build/app/outputs/bundle/release/observador-v*.aab
+            build/app/outputs/bundle/release/build-info-aab.txt
           retention-days: 90
-
-  # ╭──────────────────────────────────────────────╮
-  # │ 🍎 iOS Build (opcional)                      │
-  # ╰──────────────────────────────────────────────╯
-  ios:
-    name: "🍎 iOS Build"
-    needs: setup
-    if: ${{ needs.setup.outputs.should-build == 'true' && github.event.inputs.build_ios == 'true' }}
-    runs-on: macos-latest
-    
-    steps:
-      - name: "📥 Checkout código"
-        uses: actions/checkout@v4
-
-      - name: "🛠️ Instalar Flutter"
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: "📦 Instalar dependências"
-        run: flutter pub get
-
-      - name: "🏗️ Build iOS"
-        run: flutter build ios --release --no-codesign
-
-      - name: "📤 Upload iOS Build"
-        uses: actions/upload-artifact@v4
-        with:
-          name: "🍎-observador-ios"
-          path: build/ios/iphoneos/Runner.app
-          retention-days: 30
 
   # ╭──────────────────────────────────────────────╮
   # │ 📊 Resumo Final                              │
@@ -314,7 +264,7 @@ jobs:
   summary:
     name: "📊 Resumo do Build"
     needs: [setup, android-test, android-apk, android-aab]
-    if: always() && needs.setup.outputs.should-build == 'true'
+    if: always()
     runs-on: ubuntu-latest
     
     steps:
@@ -326,13 +276,17 @@ jobs:
           echo "🔢 Build: ${{ needs.setup.outputs.build-number }}"
           echo "📅 Data: $(date '+%Y-%m-%d %H:%M:%S UTC')"
           echo ""
-          echo "✅ Builds realizados:"
-          echo "   🧪 Test APK: ${{ needs.android-test.result == 'success' && '✅' || '❌' }}"
-          echo "   📱 Release APK: ${{ needs.android-apk.result == 'success' && '✅' || '❌' }}"
-          echo "   📦 Release AAB: ${{ needs.android-aab.result == 'success' && '✅' || '❌' }}"
-          echo "   🍎 iOS: ${{ needs.ios.result == 'success' && '✅' || (github.event.inputs.build_ios == 'true' && '❌' || '⏭️') }}"
+          echo "✅ Status dos builds:"
+          echo "   🧪 Test APK: ${{ needs.android-test.result == 'success' && '✅ Sucesso' || '❌ Falhou' }}"
+          echo "   📱 Release APK: ${{ needs.android-apk.result == 'success' && '✅ Sucesso' || '❌ Falhou' }}"
+          echo "   📦 Release AAB: ${{ needs.android-aab.result == 'success' && '✅ Sucesso' || '❌ Falhou' }}"
           echo ""
-          echo "🔗 Para baixar os arquivos:"
+          echo "📥 Para baixar os arquivos:"
           echo "   1. Vá para Actions > Esta execução"
-          echo "   2. Baixe os artifacts desejados"
-          echo "   3. Extraia e instale"
+          echo "   2. Baixe os artifacts:"
+          echo "      • 🧪-observador-test-apk (para testes)"
+          echo "      • 📱-observador-release-apk (para instalação)"
+          echo "      • 📦-observador-release-aab (para Play Store)"
+          echo "   3. Extraia e instale diretamente no Android"
+          echo ""
+          echo "🚀 APK e AAB prontos para uso!"
