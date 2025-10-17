@@ -3,7 +3,7 @@
 # ┃ 🏗️ Um workflow para governar todos!         ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-name: "🚀 Observador CI/CD"
+name: "🚀 Observador"
 
 on:
   push:
