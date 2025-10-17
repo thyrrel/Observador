@@ -3,7 +3,7 @@
 # ┃ 📱 APK e AAB sempre funcionais              ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-name: "🚀 Observador - Build Completo"
+name: "🚀 Observador"
 
 on:
   push:
