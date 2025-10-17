@@ -1,0 +1,253 @@
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃ 🚀 Workflow Unificado - Observador CI/CD    ┃
+# ┃ 🏗️ Um workflow para governar todos!         ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+name: "🚀 Observador CI/CD"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão do app (ex: 1.2.3)'
+        required: false
+        default: '1.0.0'
+        type: string
+      skip_desktop:
+        description: 'Pular builds de Desktop? (true/false)'
+        required: false
+        default: 'true'
+        type: string
+      skip_ios:
+        description: 'Pular build do iOS? (true/false)'
+        required: false
+        default: 'true'
+        type: string
+
+env:
+  FLUTTER_VERSION: '3.24.5'
+  JAVA_VERSION: '17'
+
+jobs:
+  # ╭──────────────────────────────────────────────╮
+  # │ 🔧 Setup, Validação e Testes                 │
+  # ╰──────────────────────────────────────────────╯
+  setup_and_test:
+    name: "🔧 Setup & Test"
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build-number: ${{ steps.version.outputs.build-number }}
+      
+    steps:
+      - name: "📥 Checkout código"
+        uses: actions/checkout@v4
+
+      - name: "🛠️ Instalar Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: "📦 Instalar dependências"
+        run: flutter pub get
+
+      - name: "🔍 Análise de código"
+        run: flutter analyze --fatal-infos
+
+      - name: "🧪 Executar testes unitários"
+        run: flutter test
+
+      - name: "📊 Gerar informações da versão"
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version || '1.0.0' }}"
+          BUILD_NUMBER=$((1000 + $GITHUB_RUN_NUMBER))
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build-number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "📱 Versão: $VERSION"
+          echo "🔢 Build: $BUILD_NUMBER"
+
+  # ╭──────────────────────────────────────────────╮
+  # │ 📦 Android Builds (APK & AAB)                │
+  # ╰──────────────────────────────────────────────╯
+  android_build:
+    name: "📦 Android Build (APK & AAB)"
+    needs: setup_and_test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: "📥 Checkout código"
+        uses: actions/checkout@v4
+
+      - name: "☕ Configurar Java"
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: "🛠️ Instalar Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: "📦 Instalar dependências"
+        run: flutter pub get
+
+      - name: "🏗️ Build APK Release"
+        run: |
+          flutter build apk --release \
+            --dart-define=FLAVOR=production \
+            --dart-define=APP_NAME="Observador" \
+            --build-name="${{ needs.setup_and_test.outputs.version }}" \
+            --build-number="${{ needs.setup_and_test.outputs.build-number }}" \
+            --target-platform android-arm,android-arm64,android-x64
+
+      - name: "📁 Organizar APK Release"
+        run: |
+          cd build/app/outputs/flutter-apk/
+          mv app-release.apk "observador-v${{ needs.setup_and_test.outputs.version }}-${{ needs.setup_and_test.outputs.build-number }}.apk"
+          ls -la
+
+      - name: "📤 Upload APK Release"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "📱-observador-release-apk"
+          path: build/app/outputs/flutter-apk/observador-v*.apk
+          retention-days: 90
+
+      - name: "🏗️ Build AAB Release"
+        run: |
+          flutter build appbundle --release \
+            --dart-define=FLAVOR=production \
+            --dart-define=APP_NAME="Observador" \
+            --build-name="${{ needs.setup_and_test.outputs.version }}" \
+            --build-number="${{ needs.setup_and_test.outputs.build-number }}"
+
+      - name: "📁 Organizar AAB Release"
+        run: |
+          cd build/app/outputs/bundle/release/
+          mv app-release.aab "observador-v${{ needs.setup_and_test.outputs.version }}-${{ needs.setup_and_test.outputs.build-number }}.aab"
+          ls -la
+
+      - name: "📤 Upload AAB Release"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "📦-observador-release-aab"
+          path: build/app/outputs/bundle/release/observador-v*.aab
+          retention-days: 90
+
+  # ╭──────────────────────────────────────────────╮
+  # │ 🖥️ Desktop Builds (Linux, Windows, macOS)     │
+  # ╰──────────────────────────────────────────────╯
+  desktop_build:
+    name: "🖥️ Desktop Builds"
+    needs: setup_and_test
+    if: github.event.inputs.skip_desktop != 'true'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: "📥 Checkout código"
+        uses: actions/checkout@v4
+
+      - name: "🛠️ Instalar Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: "📦 Instalar dependências Linux (se aplicável)"
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - name: "📦 Instalar dependências Flutter"
+        run: flutter pub get
+
+      - name: "🏗️ Build para ${{ runner.os }}"
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            flutter build linux --release
+          elif [ "${{ runner.os }}" == "Windows" ]; then
+            flutter build windows --release
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            flutter build macos --release
+          fi
+
+      - name: "📤 Upload Build de ${{ runner.os }}"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "observador-${{ runner.os }}"
+          path: |
+            ${{ runner.os == 'Linux' && 'build/linux/x64/release/bundle/' || '' }}
+            ${{ runner.os == 'Windows' && 'build/windows/x64/runner/Release/' || '' }}
+            ${{ runner.os == 'macOS' && 'build/macos/Build/Products/Release/' || '' }}
+          retention-days: 30
+
+  # ╭──────────────────────────────────────────────╮
+  # │ 🍎 iOS Build                                 │
+  # ╰──────────────────────────────────────────────╯
+  ios_build:
+    name: "🍎 iOS Build"
+    needs: setup_and_test
+    if: github.event.inputs.skip_ios != 'true'
+    runs-on: macos-latest
+    
+    steps:
+      - name: "📥 Checkout código"
+        uses: actions/checkout@v4
+
+      - name: "🛠️ Instalar Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: "📦 Instalar dependências"
+        run: flutter pub get
+
+      - name: "🏗️ Build iOS (sem assinatura)"
+        run: flutter build ios --release --no-codesign
+          
+      - name: "📤 Upload IPA"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "observador-ios-build"
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 30
+
+  # ╭──────────────────────────────────────────────╮
+  # │ 📊 Resumo Final                              │
+  # ╰──────────────────────────────────────────────╯
+  summary:
+    name: "📊 Resumo do Build"
+    needs: [setup_and_test, android_build, desktop_build, ios_build]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: "📊 Resumo Final"
+        run: |
+          echo "🎉 Build do Observador concluído!"
+          echo ""
+          echo "📱 Versão: ${{ needs.setup_and_test.outputs.version }}"
+          echo "🔢 Build: ${{ needs.setup_and_test.outputs.build-number }}"
+          echo "📅 Data: $(date '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "✅ Status dos builds:"
+          echo "   🔧 Setup & Test: ${{ needs.setup_and_test.result == 'success' && '✅ Sucesso' || '❌ Falhou' }}"
+          echo "   📦 Android Build: ${{ needs.android_build.result == 'success' && '✅ Sucesso' || '❌ Falhou' }}"
+          echo "   🖥️ Desktop Builds: ${{ needs.desktop_build.result == 'success' && '✅ Sucesso' || (needs.desktop_build.result == 'skipped' && '⏭️ Pulado' || '❌ Falhou') }}"
+          echo "   🍎 iOS Build: ${{ needs.ios_build.result == 'success' && '✅ Sucesso' || (needs.ios_build.result == 'skipped' && '⏭️ Pulado' || '❌ Falhou') }}"
+          echo ""
+          echo "📥 Para baixar os arquivos, vá para a aba 'Actions' e encontre os artifacts desta execução."

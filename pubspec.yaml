@@ -27,6 +27,9 @@ dependencies:
   http: ^1.2.1                    # Requisições HTTP
   provider: ^6.1.2                # Gerenciamento de estado
 
+  # UI
+  fl_chart: ^0.71.0               # Gráficos e visualizações
+
   # Necessárias para corrigir erros do build
   shared_preferences: ^2.2.2      # Armazenamento local simples
   flutter_secure_storage: ^9.0.0  # Armazenamento seguro
