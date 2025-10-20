@@ -7,6 +7,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/device_model.dart';
+import '../../models/router_device.dart'; // 💡 CORREÇÃO: Adicionada importação para RouterDevice
 import 'router_adapter.dart';
 import 'router_session.dart';
 import 'router_type.dart';
