@@ -15,7 +15,8 @@ class HistoryService {
     return data?.split(',') ?? <String>[];
   }
 
-  Future<void> addEntry(String entry) async {
+  // 💡 CORREÇÃO: Renomeado de addEntry para logEvent para resolver o erro em home_screen.dart
+  Future<void> logEvent(String entry) async {
     final List<String> history = await getHistory();
     history.add(entry);
     await storageService.save(_historyKey, history.join(','));
