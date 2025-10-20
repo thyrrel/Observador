@@ -1,4 +1,7 @@
 // /lib/models/device_model.dart
+
+import 'router_device.dart'; // 💡 IMPORTAÇÃO ADICIONADA PARA RESOLVER O ERRO 'RouterDevice' isn't a type.
+
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃ 📦 DeviceModel - Representa um dispositivo na rede ┃
 // ┃ 🔍 IP, MAC, tráfego, tipo, sinal, prioridade etc ┃
