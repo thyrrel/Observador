@@ -4,6 +4,7 @@
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 import '../../models/device_model.dart';
+import '../../models/router_device.dart'; // 💡 CORREÇÃO: Adicionada importação para RouterDevice
 import 'router_session.dart';
 
 abstract class RouterAdapter {
