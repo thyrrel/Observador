@@ -31,9 +31,9 @@ class ThemeService {
 // Sugestões
 // - 🛡️ Implementar persistência com SharedPreferences ou Hive
 // - 🔤 Adicionar suporte a temas personalizados (ex: Matrix, OLED)
-– 📦 Criar método `getTheme(AppThemeType type)` para facilitar seleção dinâmica
-– 🧩 Integrar com `ChangeNotifier` ou `ValueNotifier` para reatividade
-– 🎨 Sincronizar com `PlaceholderService` para consistência visual
+// – 📦 Criar método `getTheme(AppThemeType type)` para facilitar seleção dinâmica // 💡 CORREÇÃO
+// – 🧩 Integrar com `ChangeNotifier` ou `ValueNotifier` para reatividade          // 💡 CORREÇÃO
+// – 🎨 Sincronizar com `PlaceholderService` para consistência visual             // 💡 CORREÇÃO
 
 // ✍️ byThyrrel  
 // 💡 Código formatado com estilo técnico, seguro e elegante  
