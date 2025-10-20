@@ -1,4 +1,5 @@
 // /lib/models/router_device.dart
+
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃ 📡 RouterDevice - Dispositivo bruto vindo do roteador ┃
 // ┃ 🔍 MAC, nome, tráfego, tipo, sinal, fabricante etc ┃
@@ -59,9 +60,8 @@ class RouterDevice {
 
   static DateTime? _parseDate(dynamic v) {
     if (v is String) {
-      try {
-        return DateTime.tryParse(v);
-      } catch (_) {}
+      // 💡 CORREÇÃO: Usando a forma correta e limpa de tryParse, se for o problema.
+      return DateTime.tryParse(v); 
     }
     return null;
   }
