@@ -1,6 +1,7 @@
 // /lib/models/device_model.dart
 
 import 'router_device.dart'; // 💡 IMPORTAÇÃO ADICIONADA PARA RESOLVER O ERRO 'RouterDevice' isn't a type.
+import 'dart:convert'; // Necessário para a conversão de/para String/DateTime em JSON
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃ 📦 DeviceModel - Representa um dispositivo na rede ┃
@@ -35,6 +36,44 @@ class DeviceModel {
     this.lastSeen,
     this.blocked = false,
   });
+  
+  // 💡 CORREÇÃO 1: Adição do método toJson() para serialização
+  Map<String, dynamic> toJson() {
+    return {
+      'ip': ip,
+      'mac': mac,
+      'name': name,
+      'manufacturer': manufacturer,
+      'type': type,
+      'rxBytes': rxBytes,
+      'txBytes': txBytes,
+      'signalStrength': signalStrength,
+      'priorityLevel': priorityLevel,
+      'lastSeen': lastSeen?.toIso8601String(), // Converte DateTime para String
+      'blocked': blocked,
+    };
+  }
+
+  // 💡 CORREÇÃO 2: Adição do factory constructor fromJson() para desserialização
+  factory DeviceModel.fromJson(Map<String, dynamic> json) {
+    return DeviceModel(
+      ip: json['ip'] as String,
+      mac: json['mac'] as String,
+      name: json['name'] as String,
+      manufacturer: json['manufacturer'] as String,
+      type: json['type'] as String,
+      rxBytes: json['rxBytes'] as int,
+      txBytes: json['txBytes'] as int,
+      // Propriedades com valores padrão/nulos para segurança na leitura
+      signalStrength: json['signalStrength'] as int? ?? 0,
+      priorityLevel: json['priorityLevel'] as int? ?? 0,
+      lastSeen: json['lastSeen'] != null 
+          ? DateTime.tryParse(json['lastSeen'] as String) 
+          : null,
+      blocked: json['blocked'] as bool? ?? false,
+    );
+  }
+
 
   /// 🧬 Cria a partir de RouterDevice
   factory DeviceModel.fromRouter(RouterDevice r) {
