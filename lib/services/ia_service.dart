@@ -7,17 +7,28 @@ import 'logger_service.dart';
 class IaService {
   static final IaService _instance = IaService._internal();
   factory IaService() => _instance;
+  
+  // 💡 CORREÇÃO 1: Declaração da dependência
+  late final LoggerService _loggerService;
+
   IaService._internal();
+
+  // 💡 CORREÇÃO 2: Método estático para configurar o Singleton após a criação
+  static void configure(LoggerService loggerService) {
+    _instance._loggerService = loggerService;
+  }
 
   Future<void> initialize() async {
     // ⚙️ Inicialização de IA híbrida: local + API NLP/Deep Learning
-    await LoggerService().log("IA inicializada (local + API)");
+    // 💡 CORREÇÃO 3: Usando a dependência injetada
+    await _loggerService.log("IA inicializada (local + API)");
   }
 
   Future<void> processLog(String logLine) async {
     // 🧠 Análise automática de logs com detecção de padrões críticos
     if (logLine.contains("erro") || logLine.contains("falha")) {
-      await LoggerService().log("IA detectou alerta: $logLine");
+      // 💡 CORREÇÃO 4: Usando a dependência injetada
+      await _loggerService.log("IA detectou alerta: $logLine");
     }
   }
 }
