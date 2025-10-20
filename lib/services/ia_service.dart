@@ -26,8 +26,8 @@ class IaService {
 // - 🧩 Adicionar classificação de severidade (info, warning, critical) nos logs
 // - 🛡️ Usar expressões regulares para detecção mais precisa de padrões
 // - 🔤 Permitir integração com múltiplas fontes de log (ex: sistema, rede, app)
-– 📦 Expor stream de eventos para UI reativa ou dashboards
-– 🎨 Adicionar feedback visual ou sonoro quando alertas forem detectados
+// – 📦 Expor stream de eventos para UI reativa ou dashboards           // 💡 CORREÇÃO
+// – 🎨 Adicionar feedback visual ou sonoro quando alertas forem detectados // 💡 CORREÇÃO
 
 // ✍️ byThyrrel
 // 💡 Código formatado com estilo técnico, seguro e elegante
