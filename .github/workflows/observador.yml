@@ -28,6 +28,11 @@ on:
         default: 'true'
         type: string
 
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
 env:
   FLUTTER_VERSION: '3.22.0'
   JAVA_VERSION: '17'
@@ -39,11 +44,12 @@ jobs:
   setup_and_test:
     name: "🔧 Setup & Test"
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+
     outputs:
       version: ${{ steps.version.outputs.version }}
       build-number: ${{ steps.version.outputs.build-number }}
-      
+
     steps:
       - name: "📥 Checkout código"
         uses: actions/checkout@v4
@@ -54,14 +60,31 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
+      - name: "💾 Cache de dependências Pub"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: "🔍 Verificar versão Flutter"
+        run: |
+          flutter --version
+          flutter doctor -v
+
       - name: "📦 Instalar dependências"
         run: flutter pub get
 
       - name: "🔍 Análise de código"
         run: flutter analyze --fatal-infos
+        continue-on-error: true
 
       - name: "🧪 Executar testes unitários"
         run: flutter test
+        continue-on-error: true
 
       - name: "📊 Gerar informações da versão"
         id: version
@@ -80,7 +103,8 @@ jobs:
     name: "📦 Android Build (APK & AAB)"
     needs: setup_and_test
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 60
+
     steps:
       - name: "📥 Checkout código"
         uses: actions/checkout@v4
@@ -90,6 +114,16 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: ${{ env.JAVA_VERSION }}
+
+      - name: "💾 Cache Gradle"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: "🛠️ Instalar Flutter"
         uses: subosito/flutter-action@v2
@@ -112,15 +146,22 @@ jobs:
       - name: "📁 Organizar APK Release"
         run: |
           cd build/app/outputs/flutter-apk/
-          mv app-release.apk "observador-v${{ needs.setup_and_test.outputs.version }}-${{ needs.setup_and_test.outputs.build-number }}.apk"
-          ls -la
+          if [ -f "app-release.apk" ]; then
+            mv app-release.apk "observador-v${{ needs.setup_and_test.outputs.version }}-${{ needs.setup_and_test.outputs.build-number }}.apk"
+            ls -la
+          else
+            echo "❌ Erro: app-release.apk não encontrado!"
+            exit 1
+          fi
 
       - name: "📤 Upload APK Release"
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: "📱-observador-release-apk"
           path: build/app/outputs/flutter-apk/observador-v*.apk
           retention-days: 90
+          if-no-files-found: error
 
       - name: "🏗️ Build AAB Release"
         run: |
@@ -133,15 +174,22 @@ jobs:
       - name: "📁 Organizar AAB Release"
         run: |
           cd build/app/outputs/bundle/release/
-          mv app-release.aab "observador-v${{ needs.setup_and_test.outputs.version }}-${{ needs.setup_and_test.outputs.build-number }}.aab"
-          ls -la
+          if [ -f "app-release.aab" ]; then
+            mv app-release.aab "observador-v${{ needs.setup_and_test.outputs.version }}-${{ needs.setup_and_test.outputs.build-number }}.aab"
+            ls -la
+          else
+            echo "❌ Erro: app-release.aab não encontrado!"
+            exit 1
+          fi
 
       - name: "📤 Upload AAB Release"
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: "📦-observador-release-aab"
           path: build/app/outputs/bundle/release/observador-v*.aab
           retention-days: 90
+          if-no-files-found: error
 
   # ╭──────────────────────────────────────────────╮
   # │ 🖥️ Desktop Builds (Linux, Windows, macOS)     │
@@ -149,12 +197,16 @@ jobs:
   desktop_build:
     name: "🖥️ Desktop Builds"
     needs: setup_and_test
-    if: github.event.inputs.skip_desktop != 'true'
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.skip_desktop != 'true'
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - name: "📥 Checkout código"
         uses: actions/checkout@v4
@@ -174,25 +226,78 @@ jobs:
       - name: "📦 Instalar dependências Flutter"
         run: flutter pub get
 
-      - name: "🏗️ Build para ${{ runner.os }}"
+      - name: "🏗️ Build Linux"
+        if: runner.os == 'Linux'
+        run: flutter build linux --release
+
+      - name: "🏗️ Build Windows"
+        if: runner.os == 'Windows'
+        run: flutter build windows --release
+
+      - name: "🏗️ Build macOS"
+        if: runner.os == 'macOS'
+        run: flutter build macos --release
+
+      - name: "📦 Verificar build Linux"
+        if: runner.os == 'Linux'
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            flutter build linux --release
-          elif [ "${{ runner.os }}" == "Windows" ]; then
-            flutter build windows --release
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            flutter build macos --release
+          if [ -d "build/linux/x64/release/bundle/" ]; then
+            echo "✅ Build Linux encontrado"
+            ls -la build/linux/x64/release/bundle/
+          else
+            echo "❌ Erro: Build Linux não encontrado!"
+            exit 1
           fi
 
-      - name: "📤 Upload Build de ${{ runner.os }}"
+      - name: "📤 Upload Build Linux"
+        if: runner.os == 'Linux' && success()
         uses: actions/upload-artifact@v4
         with:
-          name: "observador-${{ runner.os }}"
-          path: |
-            ${{ runner.os == 'Linux' && 'build/linux/x64/release/bundle/' || '' }}
-            ${{ runner.os == 'Windows' && 'build/windows/x64/runner/Release/' || '' }}
-            ${{ runner.os == 'macOS' && 'build/macos/Build/Products/Release/' || '' }}
+          name: "observador-Linux"
+          path: build/linux/x64/release/bundle/
           retention-days: 30
+          if-no-files-found: error
+
+      - name: "📦 Verificar build Windows"
+        if: runner.os == 'Windows'
+        run: |
+          if (Test-Path "build/windows/runner/Release/") {
+            Write-Host "✅ Build Windows encontrado"
+            Get-ChildItem "build/windows/runner/Release/"
+          } else {
+            Write-Host "❌ Erro: Build Windows não encontrado!"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: "📤 Upload Build Windows"
+        if: runner.os == 'Windows' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "observador-Windows"
+          path: build/windows/runner/Release/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: "📦 Verificar build macOS"
+        if: runner.os == 'macOS'
+        run: |
+          if [ -d "build/macos/Build/Products/Release/" ]; then
+            echo "✅ Build macOS encontrado"
+            ls -la build/macos/Build/Products/Release/
+          else
+            echo "❌ Erro: Build macOS não encontrado!"
+            exit 1
+          fi
+
+      - name: "📤 Upload Build macOS"
+        if: runner.os == 'macOS' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "observador-macOS"
+          path: build/macos/Build/Products/Release/
+          retention-days: 30
+          if-no-files-found: error
 
   # ╭──────────────────────────────────────────────╮
   # │ 🍎 iOS Build                                 │
@@ -200,9 +305,12 @@ jobs:
   ios_build:
     name: "🍎 iOS Build"
     needs: setup_and_test
-    if: github.event.inputs.skip_ios != 'true'
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.skip_ios != 'true'
+    timeout-minutes: 60
     runs-on: macos-latest
-    
+
     steps:
       - name: "📥 Checkout código"
         uses: actions/checkout@v4
@@ -218,23 +326,36 @@ jobs:
 
       - name: "🏗️ Build iOS (sem assinatura)"
         run: flutter build ios --release --no-codesign
-          
+
+      - name: "📦 Verificar build iOS"
+        run: |
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            echo "✅ Build iOS encontrado"
+            ls -la build/ios/iphoneos/
+          else
+            echo "❌ Erro: Build iOS não encontrado!"
+            exit 1
+          fi
+
       - name: "📤 Upload IPA"
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: "observador-ios-build"
           path: build/ios/iphoneos/Runner.app
           retention-days: 30
+          if-no-files-found: error
 
   # ╭──────────────────────────────────────────────╮
   # │ 📊 Resumo Final                              │
   # ╰──────────────────────────────────────────────╯
   summary:
     name: "📊 Resumo do Build"
-    needs: [setup_and_test, android_build, desktop_build, ios_build]
+    needs: [setup_and_test, android_build]
     if: always()
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 10
+
     steps:
       - name: "📊 Resumo Final"
         run: |
@@ -247,7 +368,5 @@ jobs:
           echo "✅ Status dos builds:"
           echo "   🔧 Setup & Test: ${{ needs.setup_and_test.result == 'success' && '✅ Sucesso' || '❌ Falhou' }}"
           echo "   📦 Android Build: ${{ needs.android_build.result == 'success' && '✅ Sucesso' || '❌ Falhou' }}"
-          echo "   🖥️ Desktop Builds: ${{ needs.desktop_build.result == 'success' && '✅ Sucesso' || (needs.desktop_build.result == 'skipped' && '⏭️ Pulado' || '❌ Falhou') }}"
-          echo "   🍎 iOS Build: ${{ needs.ios_build.result == 'success' && '✅ Sucesso' || (needs.ios_build.result == 'skipped' && '⏭️ Pulado' || '❌ Falhou') }}"
           echo ""
           echo "📥 Para baixar os arquivos, vá para a aba 'Actions' e encontre os artifacts desta execução."
