@@ -32,7 +32,7 @@ class LoggerService {
 // - 🔤 Criar método `filterLogs(String keyword)` para buscas específicas
 // - 📦 Migrar para estrutura JSON com campos `timestamp`, `level`, `message`
 // - 🧩 Adicionar suporte a níveis de log (`info`, `warning`, `error`)
-– 🎨 Expor stream para UI reativa ou exportação de logs
+// – 🎨 Expor stream para UI reativa ou exportação de logs // 💡 CORREÇÃO
 
 // ✍️ byThyrrel
 // 💡 Código formatado com estilo técnico, seguro e elegante
