@@ -9,6 +9,7 @@ import '../services/theme_service.dart';
 import '../services/placeholder_service.dart';
 import '../services/history_service.dart';
 import '../services/ia_service.dart';
+import '../models/device_model.dart'; // 💡 CORREÇÃO: Adicionada importação para DeviceModel (anteriormente referenciado como 'Device')
 
 import '../widgets/device_list_widget.dart';
 import '../widgets/notification_widget.dart';
@@ -21,7 +22,8 @@ class HomeScreen extends StatelessWidget {
     final ThemeService themeService = Provider.of<ThemeService>(context);
     final PlaceholderService placeholderService = Provider.of<PlaceholderService>(context);
     final HistoryService historyService = Provider.of<HistoryService>(context);
-    final IAService iaService = Provider.of<IAService>(context);
+    // 💡 CORREÇÃO: Tipo renomeado de IAService para IaService
+    final IaService iaService = Provider.of<IaService>(context); 
 
     return Scaffold(
       appBar: AppBar(
@@ -29,13 +31,16 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.brightness_6),
+            // 🛑 ERRO: themeService.cycleTheme() precisa ser implementado.
             onPressed: () => themeService.cycleTheme(),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () async {
-              await placeholderService.refreshPlaceholders();
-              iaService.runDiagnostics();
+              // 🛑 ERRO: placeholderService.refreshPlaceholders() precisa ser implementado.
+              await placeholderService.refreshPlaceholders(); 
+              // 🛑 ERRO: iaService.runDiagnostics() precisa ser implementado.
+              iaService.runDiagnostics(); 
               historyService.logEvent('Manual refresh triggered');
             },
           ),
@@ -44,13 +49,17 @@ class HomeScreen extends StatelessWidget {
       body: Column(
         children: [
           NotificationWidget(
-            notifications: historyService.recentEvents,
+            // 🛑 ERRO: historyService.recentEvents precisa ser implementado (getter).
+            notifications: historyService.recentEvents, 
           ),
           Expanded(
             child: DeviceListWidget(
-              placeholders: placeholderService.placeholders,
-              onDeviceAction: (Device device, String action) {
-                iaService.analyzeDevice(device);
+              // 🛑 ERRO: placeholderService.placeholders precisa ser implementado (getter).
+              placeholders: placeholderService.placeholders, 
+              // 💡 CORREÇÃO: Tipo renomeado de Device para DeviceModel
+              onDeviceAction: (DeviceModel device, String action) { 
+                // 🛑 ERRO: iaService.analyzeDevice() precisa ser implementado.
+                iaService.analyzeDevice(device); 
                 historyService.logEvent('Action $action on ${device.name}');
               },
             ),
@@ -59,7 +68,8 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          iaService.runBackgroundAnalysis();
+          // 🛑 ERRO: iaService.runBackgroundAnalysis() precisa ser implementado.
+          iaService.runBackgroundAnalysis(); 
           historyService.logEvent('Background analysis triggered');
         },
         child: const Icon(Icons.analytics),
